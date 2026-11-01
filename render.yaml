@@ -5,8 +5,6 @@ services:
     plan: free
     healthCheckPath: /
     envVars:
-      - key: PUBLIC_ORIGIN
-        sync: false # set to your public https URL, e.g. https://sound-doodles.onrender.com
       - key: ROOM_TTL_MINUTES
         value: "120"
       - key: TURN_URL

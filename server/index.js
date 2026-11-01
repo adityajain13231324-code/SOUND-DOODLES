@@ -17,11 +17,22 @@ export async function createApp({
     rooms = new Map(),
     sockets = new Map(),
     limits = new Map();
-  const originAllowed = (origin) =>
-    !origin || origin === (process.env.PUBLIC_ORIGIN || `http://localhost:${port}`);
+  // Cross-site requests are refused. With PUBLIC_ORIGIN set it must match exactly; without it,
+  // the request's Origin host must equal the Host it was sent to, so hosting needs no extra setup.
+  const originAllowed = (origin, host) => {
+    if (!origin) return true;
+    if (process.env.PUBLIC_ORIGIN)
+      return origin === process.env.PUBLIC_ORIGIN.replace(/\/$/, "");
+    try {
+      return new URL(origin).host === host;
+    } catch {
+      return false;
+    }
+  };
   const io = new Server(http, {
     maxHttpBufferSize: 65536,
-    allowRequest: (req, cb) => cb(null, originAllowed(req.headers.origin)),
+    allowRequest: (req, cb) =>
+      cb(null, originAllowed(req.headers.origin, req.headers.host)),
     serveClient: false,
   });
   app.disable("x-powered-by");
@@ -49,7 +60,10 @@ export async function createApp({
     const token = (req.headers.authorization || "").replace(/^Bearer /, "");
     const room = rooms.get(String(req.params.code || "").toUpperCase());
     const player = room?.players.find((p) => p.token === token);
-    if (!player) throw new GameError("This room session has expired. Rejoin from the invitation.");
+    if (!player)
+      throw new GameError(
+        "This room session has expired. Rejoin from the invitation.",
+      );
     return { room, player };
   };
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
@@ -70,10 +84,12 @@ export async function createApp({
     (req, res, next) => {
       try {
         req.gameAuth = auth(req);
-        if (!originAllowed(req.headers.origin))
+        if (!originAllowed(req.headers.origin, req.headers.host))
           return res.status(403).json({ error: "Origin not allowed." });
         if (!rate(`upload:${req.gameAuth.player.id}`, 15))
-          return res.status(429).json({ error: "Too many uploads. Try again shortly." });
+          return res
+            .status(429)
+            .json({ error: "Too many uploads. Try again shortly." });
         next();
       } catch (e) {
         res.status(401).json({ error: e.message });
@@ -100,7 +116,9 @@ export async function createApp({
     try {
       const { room, player } = auth(req);
       if (!room.canHear(player.id, req.params.audioId))
-        return res.status(403).json({ error: "This sound is not available at this step." });
+        return res
+          .status(403)
+          .json({ error: "This sound is not available at this step." });
       const a = room.audio.get(req.params.audioId);
       res
         .set({
@@ -126,9 +144,11 @@ export async function createApp({
         if (room) throw new GameError("Already in a room.");
         if (!rate(`enter:${socket.handshake.address}`, 30))
           throw new GameError("Too many attempts. Try again in a minute.");
-        if (!data || typeof data !== "object") throw new GameError("Invalid room request.");
+        if (!data || typeof data !== "object")
+          throw new GameError("Invalid room request.");
         if (data.create) {
-          if (rooms.size >= 250) throw new GameError("The studio is full. Try again shortly.");
+          if (rooms.size >= 250)
+            throw new GameError("The studio is full. Try again shortly.");
           let code;
           do {
             code = Array.from(
@@ -140,10 +160,16 @@ export async function createApp({
           rooms.set(code, room);
         } else room = rooms.get(String(data.code || "").toUpperCase());
         if (!room)
-          throw new GameError("Room not found. Check the code or ask for a fresh invitation.");
-        player = data.token ? room.players.find((p) => p.token === data.token) : null;
+          throw new GameError(
+            "Room not found. Check the code or ask for a fresh invitation.",
+          );
+        player = data.token
+          ? room.players.find((p) => p.token === data.token)
+          : null;
         if (data.token && !player)
-          throw new GameError("Your session expired. Join again with your nickname.");
+          throw new GameError(
+            "Your session expired. Join again with your nickname.",
+          );
         if (!player) player = room.add(data);
         const previous = sockets.get(player.id);
         if (previous && previous !== socket) previous.disconnect(true);
@@ -162,7 +188,8 @@ export async function createApp({
     socket.on("action", (data, ack = () => {}) => {
       try {
         if (!room || !player) throw new GameError("Join a room first.");
-        if (!rate(`action:${player.id}`, 40, 1000)) throw new GameError("Slow down for a moment.");
+        if (!rate(`action:${player.id}`, 40, 1000))
+          throw new GameError("Slow down for a moment.");
         room.tick();
         room.dispatch(player.id, data?.event, data?.data);
         broadcast(room);
@@ -170,27 +197,31 @@ export async function createApp({
       } catch (e) {
         ack({
           ok: false,
-          error: e instanceof GameError ? e.message : "That action could not be completed.",
+          error:
+            e instanceof GameError
+              ? e.message
+              : "That action could not be completed.",
         });
         if (!(e instanceof GameError)) console.error(e);
       }
     });
     socket.on("signal", (data) => {
-      if (!room || !player || !data || !rate(`signal:${player.id}`, 150, 10000)) return;
+      if (!room || !player || !data || !rate(`signal:${player.id}`, 150, 10000))
+        return;
       const target = room.player(data.to);
       if (!target?.connected || target.id === player.id) return;
       const performers = room.performers();
-      if (!performers.includes(player.id) && !performers.includes(target.id)) return;
-      if (data.phaseId !== room.phaseId || JSON.stringify(data).length > 20000) return;
+      if (!performers.includes(player.id) && !performers.includes(target.id))
+        return;
+      if (data.phaseId !== room.phaseId || JSON.stringify(data).length > 20000)
+        return;
       if (!["offer", "answer", "candidate"].includes(data.kind)) return;
-      sockets
-        .get(target.id)
-        ?.emit("signal", {
-          from: player.id,
-          kind: data.kind,
-          payload: data.payload,
-          phaseId: room.phaseId,
-        });
+      sockets.get(target.id)?.emit("signal", {
+        from: player.id,
+        kind: data.kind,
+        payload: data.payload,
+        phaseId: room.phaseId,
+      });
     });
     socket.on("leave", () => {
       if (room && player) {
@@ -212,10 +243,15 @@ export async function createApp({
   const cleanup = setInterval(() => {
     const now = Date.now();
     for (const [code, room] of rooms) {
-      const ttl = Math.min(120, Math.max(10, Number(process.env.ROOM_TTL_MINUTES) || 120)) * 60000;
+      const ttl =
+        Math.min(
+          120,
+          Math.max(10, Number(process.env.ROOM_TTL_MINUTES) || 120),
+        ) * 60000;
       if (
         now - room.created > ttl ||
-        (!room.players.some((p) => p.connected) && now - room.touched > 10 * 60000)
+        (!room.players.some((p) => p.connected) &&
+          now - room.touched > 10 * 60000)
       ) {
         for (const p of room.players) {
           sockets.get(p.id)?.emit("expired");
@@ -238,27 +274,32 @@ export async function createApp({
         if (now - a.created > 120000 && !used.has(id)) room.audio.delete(id);
       if (room.tick()) broadcast(room);
     }
-    for (const [key, limit] of limits) if (now - limit.start > 120000) limits.delete(key);
+    for (const [key, limit] of limits)
+      if (now - limit.start > 120000) limits.delete(key);
   }, 200);
   cleanup.unref();
   let vite;
   if (production) app.use(express.static(path.join(root, "dist")));
   else {
     const { createServer } = await import("vite");
-    vite = await createServer({ root, server: { middlewareMode: true }, appType: "spa" });
+    vite = await createServer({
+      root,
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
     app.use(vite.middlewares);
   }
   if (production)
-    app.get("/{*path}", (_req, res) => res.sendFile(path.join(root, "dist/index.html")));
+    app.get("/{*path}", (_req, res) =>
+      res.sendFile(path.join(root, "dist/index.html")),
+    );
   app.use((error, _req, res, _next) =>
-    res
-      .status(error.status || 500)
-      .json({
-        error:
-          error.type === "entity.too.large"
-            ? "Recording is too large. Try a shorter take."
-            : "Request could not be completed.",
-      }),
+    res.status(error.status || 500).json({
+      error:
+        error.type === "entity.too.large"
+          ? "Recording is too large. Try a shorter take."
+          : "Request could not be completed.",
+    }),
   );
   await new Promise((resolve) => http.listen(port, "0.0.0.0", resolve));
   return {
@@ -273,9 +314,14 @@ export async function createApp({
     },
   };
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
   const app = await createApp({
-    production: process.argv.includes("--production") || process.env.NODE_ENV === "production",
+    production:
+      process.argv.includes("--production") ||
+      process.env.NODE_ENV === "production",
   });
   console.log(`Sound Doodles is listening on http://localhost:${app.port}`);
 }

@@ -39,12 +39,12 @@ node scripts/shots.mjs   # screenshots of every theme at desktop and phone sizes
 
 ## Configuration
 
-| Variable                                       | Purpose                                                                                |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `PORT`                                         | Server port (default 3000).                                                            |
-| `PUBLIC_ORIGIN`                                | Public URL of the site. Used to build invite links and to reject cross-origin uploads. |
-| `ROOM_TTL_MINUTES`                             | Maximum room lifetime, 10–120 (default 120).                                           |
-| `TURN_URL`, `TURN_USERNAME`, `TURN_CREDENTIAL` | Optional TURN relay for live audio on restrictive networks.                            |
+| Variable                                       | Purpose                                                                                                                                                                                                                       |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                                         | Server port (default 3000).                                                                                                                                                                                                   |
+| `PUBLIC_ORIGIN`                                | Optional. Leave unset on normal hosting: the server accepts requests from its own site and refuses other sites. Set it only behind a proxy that changes the Host header, to your exact public URL (https, no trailing slash). |
+| `ROOM_TTL_MINUTES`                             | Maximum room lifetime, 10–120 (default 120).                                                                                                                                                                                  |
+| `TURN_URL`, `TURN_USERNAME`, `TURN_CREDENTIAL` | Optional TURN relay for live audio on restrictive networks.                                                                                                                                                                   |
 
 ## Hosting
 
