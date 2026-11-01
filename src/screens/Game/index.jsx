@@ -14,6 +14,7 @@ import { TextAction } from "../../ui/TextAction.jsx";
 import { FlipCard, Podium } from "../../ui/ceremony.jsx";
 import { Confetti, useShake } from "../../ui/fx.jsx";
 import { Voting } from "../Voting.jsx";
+import { SeedScreen } from "../SeedScreen.jsx";
 import {
   ArrowRight,
   Check,
@@ -478,24 +479,7 @@ export function Game({ state: s, me, session, host, act, action, upload }) {
     );
   }
   if (phase === "seed")
-    return (
-      <section className="game-stage">
-        <span className="eyebrow">START SOMETHING STRANGE</span>
-        <h1>A tiny idea. A big journey.</h1>
-        <p>
-          Write a sound your friends can imitate. Keep it kind and playable.
-        </p>
-        <TextAction
-          label="Your starting phrase"
-          initial={s.seed}
-          button="Start this chain"
-          onSubmit={(text) => action("submit", { text })}
-        />
-        <button className="text-button" onClick={() => act("pass")}>
-          Keep the suggested prompt
-        </button>
-      </section>
-    );
+    return <SeedScreen state={s} action={action} act={act} />;
   if (phase === "record")
     return (
       <section className="game-stage recording-stage">

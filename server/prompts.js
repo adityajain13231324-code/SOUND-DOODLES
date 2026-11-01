@@ -174,7 +174,11 @@ const scenes = [
   ["Dragon blowing birthday candles", ["dragon"], ["candles", "birthday"]],
   ["Dog chasing a bouncing ball", ["dog"], ["ball", "bouncing"]],
   ["Sleepy robot alarm clock", ["robot"], ["alarm"]],
-  ["Spaceship with a flat tire", ["spaceship", "ufo"], ["flat", "tire", "tyre"]],
+  [
+    "Spaceship with a flat tire",
+    ["spaceship", "ufo"],
+    ["flat", "tire", "tyre"],
+  ],
   ["Kettle launching into space", ["kettle"], ["space", "launching"]],
 ];
 const modes = ["classic", "gartic", "duo", "detective", "foley", "ranking"];
@@ -192,7 +196,10 @@ export const prompts = [
       difficulty: "easy",
       aliases: [phrase, ...aliases],
       components: [],
-      hints: [category, `${phrase.split(" ").length} word${phrase.includes(" ") ? "s" : ""}`],
+      hints: [
+        category,
+        `${phrase.split(" ").length} word${phrase.includes(" ") ? "s" : ""}`,
+      ],
       modes: modes.filter((m) => m !== "duo"),
     };
   }),
@@ -236,16 +243,22 @@ function accepts(guess, alias) {
   const g = normalize(guess);
   if (` ${g} `.includes(` ${a} `)) return true;
   // A single typo only on a whole candidate of at least five characters.
-  return a.length >= 5 && Math.abs(g.length - a.length) <= 1 && distance(g, a) <= 1;
+  return (
+    a.length >= 5 && Math.abs(g.length - a.length) <= 1 && distance(g, a) <= 1
+  );
 }
 export function matchPrompt(prompt, guess, previous = []) {
   const full = prompt.aliases.some((a) => accepts(guess, a));
   const components = prompt.components
-    .map((aliases, i) => (previous.includes(i) || aliases.some((a) => accepts(guess, a)) ? i : -1))
+    .map((aliases, i) =>
+      previous.includes(i) || aliases.some((a) => accepts(guess, a)) ? i : -1,
+    )
     .filter((i) => i >= 0);
   return {
     correct:
-      full || (prompt.components.length > 0 && components.length === prompt.components.length),
+      full ||
+      (prompt.components.length > 0 &&
+        components.length === prompt.components.length),
     components,
     total: prompt.components.length,
   };

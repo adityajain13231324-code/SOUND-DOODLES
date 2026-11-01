@@ -12,6 +12,7 @@ import {
 import { MODES } from "../../shared/modes.js";
 import { mic, createMeter } from "../audio.js";
 import { Poster } from "../ui/Poster.jsx";
+import { StartingWords } from "../ui/StartingWords.jsx";
 import { PlayerCard, GhostSlot } from "../ui/PlayerCard.jsx";
 import { RoomCodeChip } from "../ui/RoomCodeChip.jsx";
 import { Drawer, Popover } from "../ui/overlays.jsx";
@@ -225,6 +226,13 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
             ))}
           </div>
         )}
+        {state.settings.mode === "gartic" && (
+          <StartingWords
+            settings={state.settings}
+            host={host}
+            change={change}
+          />
+        )}
         <Popover
           label="How scoring works"
           align="start"
@@ -370,12 +378,6 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
                     </option>
                   </select>
                 </label>
-                <Toggle
-                  disabled={!host}
-                  checked={state.settings.customPrompts}
-                  onChange={(v) => change({ customPrompts: v })}
-                  label="Write your own starting phrases"
-                />
                 <Toggle
                   disabled={!host}
                   checked={!!state.settings.awards}

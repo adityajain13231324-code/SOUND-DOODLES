@@ -400,3 +400,110 @@ test("two-player Gartic: word to sound to word, each chain touched by both playe
   while (f.room.phase === "chainReveal") f.send(f.room.host, "next");
   assert.equal(f.room.phase, "results");
 });
+test("word library: 1,000+ unique entries, every one is one or two words, no spoilers beyond samples", async () => {
+  const {
+    WORD_PACKS,
+    WORD_TOTAL,
+    WORD_SETTINGS,
+    cleanStartingWord,
+    libraryOverview,
+    wordsFor,
+  } = await import("../server/words.js");
+  assert.ok(WORD_TOTAL >= 1000);
+  assert.ok(WORD_PACKS.length >= 12);
+  const all = WORD_PACKS.flatMap((p) => p.words);
+  assert.equal(new Set(all.map((w) => w.toLowerCase())).size, all.length);
+  for (const w of all) assert.equal(cleanStartingWord(w), w, w);
+  assert.ok(
+    WORD_SETTINGS.includes("sounds") && WORD_SETTINGS.includes("mixed"),
+  );
+  assert.equal(wordsFor("sounds"), null);
+  assert.equal(wordsFor("mixed").length, WORD_TOTAL);
+  const overview = libraryOverview(6);
+  for (const p of overview.packs) {
+    assert.ok(p.samples.length <= 6 && p.count > 20);
+    assert.equal(p.words, undefined);
+  }
+});
+test("starting words must be one or two words, not a sentence", async () => {
+  const { cleanStartingWord } = await import("../server/words.js");
+  assert.equal(cleanStartingWord("  Pizza  "), "Pizza");
+  assert.equal(cleanStartingWord("Hot   Dog"), "Hot Dog");
+  assert.equal(cleanStartingWord("Spider-Man"), "Spider-Man");
+  assert.equal(cleanStartingWord("Rock n’ Roll"), null);
+  for (const bad of [
+    "",
+    "   ",
+    "a big angry dog",
+    "My dog is loud",
+    "x".repeat(25),
+    "wow!!",
+    "<b>hi</b>",
+    42,
+    null,
+  ])
+    assert.equal(cleanStartingWord(bad), null, String(bad));
+});
+test("own-word Gartic: seed phase accepts 1-2 words only, passing keeps the library word", () => {
+  const f = fixture("gartic", 3);
+  f.room.settings = { ...f.room.settings, customPrompts: true };
+  f.room.start();
+  assert.equal(f.room.phase, "seed");
+  const [a, b, c] = f.room.ids;
+  assert.throws(
+    () => f.send(a, "submit", { text: "a giant sleepy panda" }),
+    /one or two words/,
+  );
+  assert.throws(() => f.send(a, "submit", { text: "" }), /one or two words/);
+  f.send(a, "submit", { text: "Disco Llama" });
+  f.send(b, "submit", { text: "Toaster" });
+  const keep = f.room.chains[c].entries[0].text;
+  f.send(c, "pass");
+  f.expire();
+  assert.equal(f.room.chains[a].entries[0].text, "Disco Llama");
+  assert.equal(f.room.chains[b].entries[0].text, "Toaster");
+  assert.equal(f.room.chains[c].entries[0].text, keep);
+  assert.notEqual(f.room.phase, "seed");
+});
+test("word packs: draws stay inside the chosen pack and shuffle is limited to three", async () => {
+  const { wordsFor } = await import("../server/words.js");
+  const f = fixture("gartic", 4);
+  f.room.settings = {
+    ...f.room.settings,
+    customPrompts: true,
+    wordPack: "animals",
+  };
+  f.room.start();
+  const animals = new Set(wordsFor("animals"));
+  for (const id of f.room.ids)
+    assert.ok(animals.has(f.room.chains[id].entries[0].text));
+  const first = f.room.ids[0];
+  for (let i = 0; i < 3; i++) {
+    f.send(first, "shuffleSeed");
+    assert.ok(animals.has(f.room.chains[first].entries[0].text));
+  }
+  assert.equal(f.room.view(first).seedShuffles, 0);
+  assert.throws(() => f.send(first, "shuffleSeed"), /No more shuffles/);
+  assert.throws(
+    () => f.send(f.room.ids[1], "settings", { settings: {} }),
+    /host/,
+  );
+  const lobby = fixture("gartic", 3);
+  assert.throws(
+    () =>
+      lobby.send(lobby.room.host, "settings", {
+        settings: { ...lobby.room.settings, wordPack: "nope" },
+      }),
+    /word pack/,
+  );
+  lobby.send(lobby.room.host, "settings", {
+    settings: { ...lobby.room.settings, wordPack: "food" },
+  });
+  assert.equal(lobby.room.settings.wordPack, "food");
+});
+test("a pack never repeats a word until it is used up", () => {
+  const f = fixture("gartic", 8);
+  f.room.settings = { ...f.room.settings, wordPack: "vehicles" };
+  const drawn = Array.from({ length: 40 }, () => f.room.drawWord());
+  assert.equal(new Set(drawn).size, 40);
+});
