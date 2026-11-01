@@ -21,7 +21,14 @@ import {
   silenceEffects,
 } from "./audio.js";
 
-export function Avatar({ kind = "blob", size = 48, className = "" }) {
+export function Avatar({
+  kind = "blob",
+  size = 48,
+  className = "",
+  animated = false,
+  reactive = false,
+  style,
+}) {
   const colors = {
     blob: "var(--violet)",
     star: "var(--gold)",
@@ -68,15 +75,24 @@ export function Avatar({ kind = "blob", size = 48, className = "" }) {
       width={size}
       height={size}
       viewBox="0 0 80 80"
-      className={`avatar ${className}`}
+      className={`avatar ${animated ? "animated" : ""} ${reactive ? "reactive" : ""} ${className}`}
+      style={style}
       role="img"
       aria-label={`${kind} avatar`}
     >
       <g fill={colors[kind] || colors.blob}>{shapes[kind] || shapes.blob}</g>
-      <g fill="#222231">
+      <g fill="#222231" className="eyes">
         <ellipse cx="30" cy="40" rx="3" ry="5" />
         <ellipse cx="50" cy="40" rx="3" ry="5" />
       </g>
+      <ellipse
+        className="mouth-open"
+        cx="40"
+        cy="54"
+        rx="6"
+        ry="5"
+        fill="#222231"
+      />
       <path
         d="M34 51q6 6 12 0"
         fill="none"

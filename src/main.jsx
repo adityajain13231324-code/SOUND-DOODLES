@@ -4,11 +4,16 @@ import "@fontsource-variable/dm-sans";
 import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/fraunces";
 import "@fontsource-variable/bricolage-grotesque";
-import "./styles.css";
-import "./motion.css";
-import "./awards.css";
-import "./guess.css";
-import "./reveal.css";
+
+import "./styles/tokens.css";
+import "./styles/legacy.css";
+import "./styles/motion.css";
+import "./styles/awards.css";
+import "./styles/guess.css";
+import "./styles/reveal.css";
+import "./styles/stage.css";
+import "./styles/ui.css";
+import "./styles/screens.css";
 import { syncMusic } from "./ambience.js";
 import { App } from "./App.jsx";
 

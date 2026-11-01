@@ -1,13 +1,61 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { ArrowRight, Shuffle } from "lucide-react";
 import { AVATARS } from "../../shared/modes.js";
 import { Avatar, Modal } from "../components.jsx";
-import { ArrowRight } from "lucide-react";
+import { Button } from "../ui/kit.jsx";
+import { sfx } from "../ui/sfx.js";
+
+/** Six boxes that pop as you type. A real, labelled input sits on top so paste, autofill and screen readers work. */
+function CodeBoxes({ value, onChange }) {
+  const input = useRef();
+  return (
+    <div className="code-field">
+      <span className="code-label">Room code</span>
+      <div className="code-boxes" onClick={() => input.current?.focus()}>
+        {Array.from({ length: 6 }, (_, i) => (
+          <span
+            key={i + (value[i] || "")}
+            className={`code-box ${value[i] ? "filled" : ""} ${i === value.length ? "active" : ""}`}
+            aria-hidden="true"
+          >
+            {value[i] || ""}
+          </span>
+        ))}
+        <input
+          ref={input}
+          aria-label="Room code"
+          value={value}
+          onChange={(e) => {
+            const next = e.target.value
+              .toUpperCase()
+              .replace(/[^A-Z0-9]/g, "")
+              .slice(0, 6);
+            if (next.length > value.length) sfx("tap");
+            onChange(next);
+          }}
+          required
+          maxLength={6}
+          minLength={6}
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
+          className="code-real"
+        />
+      </div>
+    </div>
+  );
+}
 
 export function Entry({ type, onClose, enter, busy, connected, code = "" }) {
   const [name, setName] = useState(localStorage.getItem("sd-name") || ""),
     [avatar, setAvatar] = useState(localStorage.getItem("sd-avatar") || ""),
     [roomCode, setCode] = useState(code),
     [spectator, setSpectator] = useState(false);
+  const shuffle = () => {
+    const pool = AVATARS.filter((a) => a !== avatar);
+    setAvatar(pool[Math.floor(Math.random() * pool.length)]);
+    sfx("pop");
+  };
   return (
     <Modal
       title={
@@ -35,6 +83,17 @@ export function Entry({ type, onClose, enter, busy, connected, code = "" }) {
           });
         }}
       >
+        <div className="shuffle-row">
+          <span>Your face</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Shuffle size={16} />}
+            onClick={shuffle}
+          >
+            Surprise me
+          </Button>
+        </div>
         <div className="avatar-picker">
           {AVATARS.map((a) => (
             <button
@@ -43,9 +102,12 @@ export function Entry({ type, onClose, enter, busy, connected, code = "" }) {
               className={a === avatar ? "selected" : ""}
               aria-label={`Choose ${a} avatar`}
               aria-pressed={a === avatar}
-              onClick={() => setAvatar(a)}
+              onClick={() => {
+                setAvatar(a);
+                sfx("pop");
+              }}
             >
-              <Avatar kind={a} size={49} />
+              <Avatar kind={a} size={49} animated={a === avatar} />
             </button>
           ))}
         </div>
@@ -61,21 +123,7 @@ export function Entry({ type, onClose, enter, busy, connected, code = "" }) {
             autoComplete="nickname"
           />
         </label>
-        {type === "join" && (
-          <label className="field">
-            Room code
-            <input
-              value={roomCode}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="ABC123"
-              required
-              maxLength={6}
-              minLength={6}
-              className="code-input"
-              autoCapitalize="characters"
-            />
-          </label>
-        )}
+        {type === "join" && <CodeBoxes value={roomCode} onChange={setCode} />}
         <label className="check-row">
           <input
             type="checkbox"
@@ -84,7 +132,14 @@ export function Entry({ type, onClose, enter, busy, connected, code = "" }) {
           />
           Just watching? Join as a spectator.
         </label>
-        <button className="button primary wide" disabled={busy || !connected}>
+        <Button
+          variant="primary"
+          size="lg"
+          className="wide"
+          type="submit"
+          loading={busy}
+          disabled={!connected}
+        >
           {busy
             ? "Getting the studio ready…"
             : !connected
@@ -92,8 +147,8 @@ export function Entry({ type, onClose, enter, busy, connected, code = "" }) {
               : type === "create"
                 ? "Create room"
                 : "Join room"}
-          <ArrowRight size={18} />
-        </button>
+          {!busy && <ArrowRight size={18} />}
+        </Button>
         <p className="small muted center">
           No accounts. No downloads. Only excellent company.
         </p>

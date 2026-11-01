@@ -3,7 +3,13 @@ import { MODES } from "../shared/modes.js";
 import { Avatar, Modal, Recorder } from "./components.jsx";
 import { cue, liveConnections, mic } from "./audio.js";
 import { announce } from "./ambience.js";
-import { initialCode, readStored, themes } from "./support.js";
+import { initialCode, readStored } from "./support.js";
+import { applyTheme, watchVisibility } from "./theme.js";
+import { StageBackground } from "./ui/StageBackground.jsx";
+import { ThemePicker } from "./ui/ThemePicker.jsx";
+import { ReconnectPill } from "./ui/overlays.jsx";
+import { Cast } from "./ui/Cast.jsx";
+import { sfx } from "./ui/sfx.js";
 import { Landing } from "./screens/Landing.jsx";
 import { Entry } from "./screens/Entry.jsx";
 import { Lobby } from "./screens/Lobby.jsx";
@@ -119,9 +125,16 @@ export function App() {
     };
   }, []);
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem("sd-theme", theme);
+    applyTheme(theme);
   }, [theme]);
+  useEffect(() => watchVisibility(), []);
+  const playerCount = state?.players.length || 0;
+  const seenCount = useRef(playerCount);
+  useEffect(() => {
+    if (playerCount > seenCount.current && state?.phase === "lobby")
+      sfx("join");
+    seenCount.current = playerCount;
+  }, [playerCount]);
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(t);
@@ -239,6 +252,7 @@ export function App() {
   };
   return (
     <>
+      <StageBackground />
       <header className="site-header">
         <a
           className="brand"
@@ -269,14 +283,7 @@ export function App() {
               GOOD FRIENDS. QUESTIONABLE SOUNDS.
             </span>
           )}
-          <button
-            className="icon-button"
-            title="Change theme"
-            aria-label="Change theme"
-            onClick={() => setModal("themes")}
-          >
-            <Palette size={20} />
-          </button>
+          <ThemePicker theme={theme} onChange={setTheme} />
           <button
             className="icon-button"
             title="Audio settings"
@@ -296,17 +303,12 @@ export function App() {
         </div>
       </header>
       {!connected && state && (
-        <div className="connection-banner" role="status">
-          Connection lost. Rejoining your room…{" "}
-          <button
-            onClick={() => {
-              socket.disconnect();
-              socket.connect();
-            }}
-          >
-            Retry now
-          </button>
-        </div>
+        <ReconnectPill
+          onRetry={() => {
+            socket.disconnect();
+            socket.connect();
+          }}
+        />
       )}
       <main>
         {!state ? (
@@ -317,86 +319,9 @@ export function App() {
           />
         ) : (
           <div className="room-layout">
-            <aside className="players-rail">
-              <div className="rail-title">
-                <span>THE GREEN ROOM</span>
-                <span>
-                  {state.players.filter((p) => !p.spectator).length}/8
-                </span>
-              </div>
-              <div className="player-list">
-                {state.players.map((p) => (
-                  <div
-                    key={p.id}
-                    className={`player-row ${p.id === state.you ? "you" : ""} ${!p.connected ? "offline" : ""}`}
-                  >
-                    <Avatar kind={p.avatar} size={44} />
-                    <div>
-                      <strong>
-                        {p.name}
-                        {p.id === state.you && <small> you</small>}
-                      </strong>
-                      <span>
-                        {!p.connected
-                          ? "Reconnecting…"
-                          : p.spectator
-                            ? "Spectating"
-                            : state.phase === "lobby"
-                              ? p.ready
-                                ? "Ready to make noise"
-                                : "Getting comfy"
-                              : state.performers.includes(p.id)
-                                ? "On the mic"
-                                : state.completed?.includes(p.id)
-                                  ? "Submitted"
-                                  : state.solved?.includes(p.id)
-                                    ? "Got it!"
-                                    : `${p.score} points`}
-                      </span>
-                    </div>
-                    {p.id === state.host ? (
-                      <span title="Host" className="host-star">
-                        ✦
-                      </span>
-                    ) : state.phase === "lobby" && p.ready ? (
-                      <Check size={16} />
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-              <button
-                className="button subtle invite"
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(
-                      `${location.origin}/?room=${state.code}`,
-                    );
-                    notify("Invite link copied. Send it to your friends.");
-                  } catch {
-                    notify(`Invite friends using room code ${state.code}.`);
-                  }
-                }}
-              >
-                <Link size={17} />
-                Invite friends
-                <Copy size={14} />
-              </button>
-              <div className="rail-bottom">
-                <ShieldCheck size={16} />
-                <p>
-                  Just your room.
-                  <br />
-                  Just your weird little sounds.
-                </p>
-              </div>
-              <button
-                className="text-button leave"
-                onClick={() => setModal("leave")}
-              >
-                <LogOut size={15} />
-                Leave room
-              </button>
-            </aside>
+            {state.phase !== "lobby" && (
+              <Cast state={state} onLeave={() => setModal("leave")} />
+            )}
             <section className="room-content">
               {state.phase === "lobby" ? (
                 <Lobby
@@ -405,6 +330,8 @@ export function App() {
                   host={host}
                   act={act}
                   onMic={() => setModal("mic")}
+                  notify={notify}
+                  onLeave={() => setModal("leave")}
                 />
               ) : (
                 <>
@@ -550,37 +477,6 @@ export function App() {
           onClose={() => setModal(null)}
         />
       )}
-      {modal === "themes" && (
-        <Modal title="Set the mood." onClose={() => setModal(null)}>
-          <p className="muted">
-            Your studio, your style. Only changes your screen.
-          </p>
-          <div className="theme-grid">
-            {themes.map(([key, name, description]) => (
-              <button
-                key={key}
-                className={`theme-option ${theme === key ? "selected" : ""}`}
-                onClick={() => {
-                  setTheme(key);
-                  cue("confirm");
-                }}
-              >
-                <div className={`theme-preview ${key}`}>
-                  <i />
-                  <i />
-                  <i />
-                  <span>aa</span>
-                </div>
-                <strong>
-                  {name}
-                  {theme === key && <Check size={16} />}
-                </strong>
-                <small>{description}</small>
-              </button>
-            ))}
-          </div>
-        </Modal>
-      )}
       {modal === "audio" && (
         <Modal title="Make room for the sound." onClose={() => setModal(null)}>
           <AudioSettings />
@@ -616,7 +512,7 @@ export function App() {
               <b>01</b>
               <p>
                 <strong>Get the gang together.</strong>Create a private room and
-                send the link. Bring 3 to 8 friends and headphones.
+                send the link. Bring 1 to 7 friends and headphones.
               </p>
             </div>
             <div>
