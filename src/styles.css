@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap");
 :root {
   color-scheme: dark;
   --bg: #13131b;
@@ -37,6 +37,8 @@
   --on-accent: #fffdf7;
   --shadow: 5px 6px 0 #302d3015;
   --radius: 10px;
+  --display: "Fraunces", Georgia, serif;
+  --texture: radial-gradient(#302d3012 1px, transparent 1.5px) 0 0 / 22px 22px;
 }
 :root[data-theme="neon"] {
   color-scheme: dark;
@@ -53,18 +55,23 @@
   --gold: #f7e38c;
   --blue: #a4b9ff;
   --on-accent: #102334;
-  --shadow: 0 0 36px #71d9f108;
-  --radius: 14px;
+  --accent: var(--coral);
+  --coral: #ff7f9f;
+  --shadow: 0 0 36px #71d9f114;
+  --radius: 6px;
+  --texture:
+    linear-gradient(#71d9f10d 1px, transparent 1px) 0 0 / 44px 44px,
+    linear-gradient(90deg, #71d9f10d 1px, transparent 1px) 0 0 / 44px 44px;
 }
 :root[data-theme="sunset"] {
   color-scheme: dark;
-  --bg: #291d29;
-  --surface: #352736;
-  --surface-2: #443040;
-  --surface-3: #503645;
+  --bg: #2f1b3a;
+  --surface: #3d2549;
+  --surface-2: #4d3058;
+  --surface-3: #5b3b66;
   --text: #fff0dc;
-  --muted: #cfafbd;
-  --line: #644654;
+  --muted: #d9b9d0;
+  --line: #70507b;
   --violet: #ffc09f;
   --mint: #c7d8aa;
   --coral: #ef9f91;
@@ -72,14 +79,18 @@
   --blue: #c8b5df;
   --on-accent: #38232b;
   --shadow: 0 16px 55px #13061333;
-  --radius: 25px;
+  --radius: 28px;
+  --accent: #f4a582;
+  --display: "Bricolage Grotesque", sans-serif;
+  --texture: radial-gradient(120% 70% at 85% 0%, #e0795a26, transparent 60%);
 }
 * {
   box-sizing: border-box;
 }
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--texture, none), var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--body);
   font-size: 15px;
@@ -173,7 +184,7 @@ small,
   text-align: center;
 }
 .eyebrow {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.16em;
   font-weight: 700;
   display: inline-flex;
@@ -241,7 +252,7 @@ small,
   gap: 9px;
 }
 .header-note {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.13em;
   margin-right: 24px;
   color: var(--muted);
@@ -341,7 +352,7 @@ small,
   padding: 70px 0 64px;
 }
 .hero-eyebrow {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--mint);
   margin-bottom: 27px;
 }
@@ -383,7 +394,7 @@ small,
   display: flex;
   gap: 17px;
   margin-top: 22px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .hero-meta > span {
@@ -585,7 +596,7 @@ small,
   position: absolute;
   bottom: 0;
   right: 0;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   transform: rotate(-4deg);
 }
@@ -673,7 +684,7 @@ small,
   max-width: 250px;
 }
 .mode-link {
-  font-size: 11px;
+  font-size: 12px;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -726,7 +737,7 @@ small,
   background: var(--surface-3);
   padding: 8px 12px;
   border: 1px solid var(--line);
-  font-size: 11px;
+  font-size: 12px;
   border-radius: 8px;
   transform: rotate(-8deg);
 }
@@ -766,7 +777,7 @@ small,
   border: 0;
   background: none;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   display: flex;
   gap: 7px;
   align-items: center;
@@ -785,7 +796,7 @@ footer {
   align-items: center;
   justify-content: space-between;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 footer > span {
   letter-spacing: 0.12em;
@@ -911,7 +922,7 @@ select {
   margin-top: 11px;
 }
 .theme-option small {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .theme-preview {
@@ -1065,7 +1076,7 @@ select {
 }
 .room-pill {
   font-family: var(--display);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.12em;
   display: flex;
   align-items: center;
@@ -1090,7 +1101,7 @@ select {
 .rail-title {
   display: flex;
   justify-content: space-between;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.1em;
   color: var(--muted);
@@ -1120,11 +1131,11 @@ select {
 }
 .player-row strong small {
   font-weight: 400;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .player-row > div > span {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
   display: block;
 }
@@ -1140,7 +1151,7 @@ select {
 }
 .invite {
   margin-top: 24px;
-  font-size: 10px;
+  font-size: 12px;
   padding: 10px;
   gap: 7px;
   min-height: 42px;
@@ -1154,12 +1165,12 @@ select {
   padding-top: 55px;
 }
 .rail-bottom p {
-  font-size: 9px;
+  font-size: 12px;
 }
 .leave {
   margin-top: 16px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .room-content {
   min-width: 0;
@@ -1194,7 +1205,7 @@ select {
 .lobby-mode-head .text-button {
   margin-left: auto;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .lobby-flagships {
   display: grid;
@@ -1216,14 +1227,14 @@ select {
   font-size: 23px;
 }
 .lobby-mode p {
-  font-size: 11px;
+  font-size: 12px;
   margin: 10px 0 18px;
   line-height: 1.6;
 }
 .lobby-mode > span {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .lobby-mode:disabled {
@@ -1233,7 +1244,7 @@ select {
 .more-toggle {
   color: var(--muted);
   margin: 9px 0 15px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .extra-mode-grid {
   display: grid;
@@ -1259,11 +1270,11 @@ select {
   font-size: 12px;
 }
 .extra-mode-grid small {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 .extra-mode-grid p {
-  font-size: 10px;
+  font-size: 12px;
   grid-column: 1/3;
   margin-top: 10px;
 }
@@ -1278,10 +1289,10 @@ select {
 }
 .room-settings .field {
   margin: 10px 0;
-  font-size: 10px;
+  font-size: 12px;
 }
 .room-settings select {
-  font-size: 11px;
+  font-size: 12px;
   padding: 10px;
 }
 .lobby-bottom {
@@ -1312,7 +1323,7 @@ select {
 }
 .mic-check small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .mic-check > svg:last-child {
   color: var(--muted);
@@ -1326,14 +1337,14 @@ select {
   margin-left: auto;
 }
 .lobby-note {
-  font-size: 11px;
+  font-size: 12px;
   margin: 16px 0 12px;
 }
 .game-topline {
   display: flex;
   align-items: center;
   gap: 15px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   border-bottom: 1px solid var(--line);
   padding: 7px 0 18px;
@@ -1463,11 +1474,11 @@ select {
   background: var(--surface);
   border-radius: 20px;
   display: inline-block;
-  font-size: 11px !important;
+  font-size: 12px !important;
 }
 .component-progress {
   color: var(--mint);
-  font-size: 11px !important;
+  font-size: 12px !important;
 }
 .correct-answer {
   background: color-mix(in srgb, var(--mint) 8%, var(--surface));
@@ -1488,7 +1499,7 @@ select {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--mint);
   border: 1px solid var(--line);
   padding: 10px 14px;
@@ -1499,7 +1510,7 @@ select {
   flex: 1;
 }
 .live-bar .text-button {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--mint);
   padding: 0;
 }
@@ -1514,7 +1525,7 @@ select {
 }
 .reactions > span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   margin-right: 7px;
 }
 .reactions button {
@@ -1573,7 +1584,7 @@ select {
   align-items: center;
 }
 .preview-take > span {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 audio {
@@ -1592,7 +1603,7 @@ audio {
 .audio-player small {
   display: block;
   margin-top: 8px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--coral);
 }
 .error {
@@ -1730,7 +1741,7 @@ audio {
   margin: 25px 0 0;
 }
 .host-controls > .check-row {
-  font-size: 10px;
+  font-size: 12px;
 }
 .solvers {
   display: flex;
@@ -1793,7 +1804,7 @@ audio {
 }
 .scoreboard small {
   font-family: var(--body);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .results-stage > .button {
@@ -1882,7 +1893,7 @@ audio {
   font-size: 13px;
 }
 .recording-results p {
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 5px;
 }
 .recording-results .audio-player {
@@ -2082,7 +2093,7 @@ audio {
   }
   .hero-meta {
     gap: 10px;
-    font-size: 9px;
+    font-size: 12px;
   }
   .mode-card {
     padding: 23px 20px;
@@ -2156,7 +2167,7 @@ audio {
     max-width: 420px;
   }
   .hero-meta {
-    font-size: 9px;
+    font-size: 12px;
     gap: 13px;
     flex-wrap: wrap;
   }
@@ -2232,7 +2243,7 @@ audio {
     align-items: flex-end;
   }
   .section-title .text-button {
-    font-size: 10px;
+    font-size: 12px;
   }
   .flagship-grid {
     grid-template-columns: 1fr;
@@ -2267,7 +2278,7 @@ audio {
     margin-bottom: 3px;
   }
   .more-modes button {
-    font-size: 10px;
+    font-size: 12px;
   }
   .modes-section {
     padding-top: 25px;
@@ -2280,7 +2291,7 @@ audio {
     font-size: 8px;
   }
   .room-pill {
-    font-size: 9px;
+    font-size: 12px;
     letter-spacing: 0.05em;
     margin-right: 5px;
   }
@@ -2313,7 +2324,7 @@ audio {
     display: none;
   }
   .player-row strong {
-    font-size: 10px;
+    font-size: 12px;
     max-width: 100px;
   }
   .player-row > .avatar {
@@ -2327,7 +2338,7 @@ audio {
     align-self: flex-start;
     margin-top: 5px;
     min-height: 34px;
-    font-size: 10px;
+    font-size: 12px;
     padding: 7px 11px;
   }
   .rail-bottom {
@@ -2338,7 +2349,7 @@ audio {
     right: 22px;
     top: 155px;
     margin: 0;
-    font-size: 9px;
+    font-size: 12px;
   }
   .lobby-heading {
     padding: 3px 0 24px;
@@ -2365,14 +2376,14 @@ audio {
     margin-bottom: 14px;
   }
   .lobby-mode p {
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.55;
   }
   .lobby-mode > span {
-    font-size: 9px;
+    font-size: 12px;
   }
   .lobby-mode-head .text-button {
-    font-size: 9px;
+    font-size: 12px;
   }
   .game-stage {
     padding: 32px 0 20px;
@@ -2384,11 +2395,11 @@ audio {
     font-size: 12px;
   }
   .game-topline {
-    font-size: 10px;
+    font-size: 12px;
     gap: 10px;
   }
   .game-topline .eyebrow {
-    font-size: 9px;
+    font-size: 12px;
   }
   .text-action {
     gap: 8px;
@@ -2401,7 +2412,7 @@ audio {
     padding: 13px 10px;
   }
   .text-action .field {
-    font-size: 10px;
+    font-size: 12px;
   }
   .chain-show > h1 {
     font-size: 29px;
@@ -2444,7 +2455,7 @@ audio {
     min-width: 0;
   }
   .game-topline > .timer {
-    font-size: 11px;
+    font-size: 12px;
   }
   .reactions {
     gap: 5px;
@@ -2510,10 +2521,10 @@ audio {
     width: 11px;
   }
   .theme-option strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .theme-option small {
-    font-size: 9px;
+    font-size: 12px;
   }
   .hero-actions .button {
     font-size: 12px;
@@ -2532,7 +2543,7 @@ audio {
     height: 182px;
   }
   .connection-banner {
-    font-size: 11px;
+    font-size: 12px;
   }
   .instructions p {
     font-size: 12px;

@@ -34,9 +34,24 @@ import {
   Clock,
 } from "lucide-react";
 import { MODES, AVATARS } from "../shared/modes.js";
-import { Avatar, Wave, Modal, Recorder, PlayerAudio, Foley } from "./components.jsx";
-import { mic, audioPrefs, saveAudio, cue, liveConnections, createMeter } from "./audio.js";
+import {
+  Avatar,
+  Wave,
+  Modal,
+  Recorder,
+  PlayerAudio,
+  Foley,
+} from "./components.jsx";
+import {
+  mic,
+  audioPrefs,
+  saveAudio,
+  cue,
+  liveConnections,
+  createMeter,
+} from "./audio.js";
 import "./styles.css";
+import "./motion.css";
 
 const socket = io({ autoConnect: false });
 const icons = {
@@ -63,11 +78,15 @@ function readStored(key, fallback, storage = localStorage) {
 }
 function App() {
   const [state, setState] = useState(null),
-    [session, setSession] = useState(() => readStored("sd-session", null, sessionStorage)),
+    [session, setSession] = useState(() =>
+      readStored("sd-session", null, sessionStorage),
+    ),
     [connected, setConnected] = useState(false),
     [modal, setModal] = useState(initialCode ? "join" : null),
     [error, setError] = useState(""),
-    [theme, setTheme] = useState(localStorage.getItem("sd-theme") || "midnight"),
+    [theme, setTheme] = useState(
+      localStorage.getItem("sd-theme") || "midnight",
+    ),
     [audioStatus, setAudioStatus] = useState(""),
     [muted, setMuted] = useState(false),
     [busy, setBusy] = useState(false);
@@ -86,7 +105,8 @@ function App() {
         setBusy(false);
         if (timeout || !result?.ok) {
           setError(
-            result?.error || "The server is taking a while. Check your connection and retry.",
+            result?.error ||
+              "The server is taking a while. Check your connection and retry.",
           );
           resolve(false);
           return;
@@ -198,7 +218,9 @@ function App() {
           { event, data: { ...data, phaseId: stateRef.current?.phaseId } },
           (timeout, result) => {
             if (timeout || !result?.ok) {
-              const e = Error(result?.error || "No response yet. Reconnect and retry.");
+              const e = Error(
+                result?.error || "No response yet. Reconnect and retry.",
+              );
               setError(e.message);
               reject(e);
             } else resolve(result);
@@ -239,7 +261,10 @@ function App() {
       body: blob,
     });
     const result = await r.json();
-    if (!r.ok) throw Error(result.error || "Upload failed. Your take is still here; retry.");
+    if (!r.ok)
+      throw Error(
+        result.error || "Upload failed. Your take is still here; retry.",
+      );
     await action("submit", { audioId: result.audioId });
     cue("submit");
   };
@@ -271,7 +296,9 @@ function App() {
               <span className="status-dot" /> ROOM {state.code}
             </span>
           ) : (
-            <span className="header-note">GOOD FRIENDS. QUESTIONABLE SOUNDS.</span>
+            <span className="header-note">
+              GOOD FRIENDS. QUESTIONABLE SOUNDS.
+            </span>
           )}
           <button
             className="icon-button"
@@ -324,7 +351,9 @@ function App() {
             <aside className="players-rail">
               <div className="rail-title">
                 <span>THE GREEN ROOM</span>
-                <span>{state.players.filter((p) => !p.spectator).length}/8</span>
+                <span>
+                  {state.players.filter((p) => !p.spectator).length}/8
+                </span>
               </div>
               <div className="player-list">
                 {state.players.map((p) => (
@@ -370,7 +399,9 @@ function App() {
                 className="button subtle invite"
                 onClick={async () => {
                   try {
-                    await navigator.clipboard.writeText(`${location.origin}/?room=${state.code}`);
+                    await navigator.clipboard.writeText(
+                      `${location.origin}/?room=${state.code}`,
+                    );
                     notify("Invite link copied. Send it to your friends.");
                   } catch {
                     notify(`Invite friends using room code ${state.code}.`);
@@ -389,18 +420,29 @@ function App() {
                   Just your weird little sounds.
                 </p>
               </div>
-              <button className="text-button leave" onClick={() => setModal("leave")}>
+              <button
+                className="text-button leave"
+                onClick={() => setModal("leave")}
+              >
                 <LogOut size={15} />
                 Leave room
               </button>
             </aside>
             <section className="room-content">
               {state.phase === "lobby" ? (
-                <Lobby state={state} me={me} host={host} act={act} onMic={() => setModal("mic")} />
+                <Lobby
+                  state={state}
+                  me={me}
+                  host={host}
+                  act={act}
+                  onMic={() => setModal("mic")}
+                />
               ) : (
                 <>
                   <div className="game-topline">
-                    <span className="eyebrow">{MODES[state.settings.mode].name}</span>
+                    <span className="eyebrow">
+                      {MODES[state.settings.mode].name}
+                    </span>
                     <span>
                       {state.settings.mode === "gartic"
                         ? `Step ${Math.min(state.chainRounds, state.contributionRound + 1)} of ${state.chainRounds}`
@@ -429,7 +471,9 @@ function App() {
                       <span>{audioStatus || "Connecting live audio…"}</span>
                       <button
                         className="text-button"
-                        onClick={() => window.dispatchEvent(new Event("enable-audio"))}
+                        onClick={() =>
+                          window.dispatchEvent(new Event("enable-audio"))
+                        }
                       >
                         Enable audio
                       </button>
@@ -481,7 +525,8 @@ function App() {
           </span>
           <div>
             <ShieldCheck size={14} />
-            Private rooms <span>·</span> No accounts <span>·</span> Just bring your voice
+            Private rooms <span>·</span> No accounts <span>·</span> Just bring
+            your voice
           </div>
         </footer>
       )}
@@ -509,7 +554,9 @@ function App() {
       )}
       {modal === "themes" && (
         <Modal title="Set the mood." onClose={() => setModal(null)}>
-          <p className="muted">Your studio, your style. Only changes your screen.</p>
+          <p className="muted">
+            Your studio, your style. Only changes your screen.
+          </p>
           <div className="theme-grid">
             {themes.map(([key, name, description]) => (
               <button
@@ -562,41 +609,49 @@ function App() {
         </Modal>
       )}
       {modal === "help" && (
-        <Modal title="Bad impressions. Great company." onClose={() => setModal(null)}>
+        <Modal
+          title="Bad impressions. Great company."
+          onClose={() => setModal(null)}
+        >
           <div className="instructions">
             <div>
               <b>01</b>
               <p>
-                <strong>Get the gang together.</strong>Create a private room and send the link.
-                Bring 3 to 8 friends and headphones.
+                <strong>Get the gang together.</strong>Create a private room and
+                send the link. Bring 3 to 8 friends and headphones.
               </p>
             </div>
             <div>
               <b>02</b>
               <p>
-                <strong>Become the sound.</strong>Hum, whistle, clap, squeak. No words, spoken
-                clues, or external recordings.
+                <strong>Become the sound.</strong>Hum, whistle, clap, squeak. No
+                words, spoken clues, or external recordings.
               </p>
             </div>
             <div>
               <b>03</b>
               <p>
-                <strong>Guess. Giggle. Go again.</strong>Classic rewards quick guesses. Gartic
-                passes sounds and words around, then reveals the whole wonderful mess.
+                <strong>Guess. Giggle. Go again.</strong>Classic rewards quick
+                guesses. Gartic passes sounds and words around, then reveals the
+                whole wonderful mess.
               </p>
             </div>
           </div>
           <p className="notice">
-            Listening is central to this game. A visual meter cannot replace hearing the sounds.
-            Spectators can watch reveals and send reactions. Classic supports guessers without a
-            microphone.
+            Listening is central to this game. A visual meter cannot replace
+            hearing the sounds. Spectators can watch reveals and send reactions.
+            Classic supports guessers without a microphone.
           </p>
           <p className="small muted">
-            Live rounds are not recorded. Submitted clips stay private to the room and are deleted
-            on Play Again, server restart, after room expiry (at most 2 hours), or after everyone
-            leaves for 10 minutes. There is no replay export.
+            Live rounds are not recorded. Submitted clips stay private to the
+            room and are deleted on Play Again, server restart, after room
+            expiry (at most 2 hours), or after everyone leaves for 10 minutes.
+            There is no replay export.
           </p>
-          <button className="button primary wide" onClick={() => setModal(null)}>
+          <button
+            className="button primary wide"
+            onClick={() => setModal(null)}
+          >
             Sounds good
             <ArrowRight size={17} />
           </button>
@@ -604,7 +659,10 @@ function App() {
       )}
       {modal === "leave" && (
         <Modal title="Heading out?" onClose={() => setModal(null)}>
-          <p>Your microphone will stop. The next connected player takes over if you’re hosting.</p>
+          <p>
+            Your microphone will stop. The next connected player takes over if
+            you’re hosting.
+          </p>
           <div className="button-row">
             <button className="button" onClick={() => setModal(null)}>
               Stay a little longer
@@ -646,8 +704,8 @@ function Landing({ onCreate, onJoin, onHelp }) {
           </h1>
           <p>
             Your friends. A mystery sound. Absolutely no dignity.
-            <br className="desktop-break" /> Turn your best (or worst) impressions into a game
-            night.
+            <br className="desktop-break" /> Turn your best (or worst)
+            impressions into a game night.
           </p>
           <div className="hero-actions">
             <button className="button primary large" onClick={onCreate}>
@@ -731,7 +789,9 @@ function Landing({ onCreate, onJoin, onHelp }) {
                 <h3>{MODES[key].name}</h3>
                 <p>{MODES[key].description}</p>
                 <span className="mode-link">
-                  {key === "classic" ? "Make it. Guess it." : "Pass it. Twist it."}
+                  {key === "classic"
+                    ? "Make it. Guess it."
+                    : "Pass it. Twist it."}
                   <ArrowUpRight size={18} />
                 </span>
               </div>
@@ -780,10 +840,16 @@ function Entry({ type, onClose, enter, busy, connected, code = "" }) {
     [spectator, setSpectator] = useState(false);
   return (
     <Modal
-      title={type === "create" ? "Your room. Your kind of weird." : "The gang’s waiting."}
+      title={
+        type === "create"
+          ? "Your room. Your kind of weird."
+          : "The gang’s waiting."
+      }
       onClose={onClose}
     >
-      <p className="muted">Pick a little face and a name your friends will recognize.</p>
+      <p className="muted">
+        Pick a little face and a name your friends will recognize.
+      </p>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
@@ -857,7 +923,9 @@ function Entry({ type, onClose, enter, busy, connected, code = "" }) {
                 : "Join room"}
           <ArrowRight size={18} />
         </button>
-        <p className="small muted center">No accounts. No downloads. Only excellent company.</p>
+        <p className="small muted center">
+          No accounts. No downloads. Only excellent company.
+        </p>
       </form>
     </Modal>
   );
@@ -870,8 +938,11 @@ function Lobby({ state, me, host, act, onMic }) {
   const canStart =
     active.length >= mode.min &&
     active.every((p) => p.ready) &&
-    (state.settings.mode === "classic" ? active.some((p) => p.mic) : active.every((p) => p.mic));
-  const change = (patch) => act("settings", { settings: { ...state.settings, ...patch } });
+    (state.settings.mode === "classic"
+      ? active.some((p) => p.mic)
+      : active.every((p) => p.mic));
+  const change = (patch) =>
+    act("settings", { settings: { ...state.settings, ...patch } });
   return (
     <>
       <div className="lobby-heading">
@@ -907,13 +978,17 @@ function Lobby({ state, me, host, act, onMic }) {
               <h3>{m.name}</h3>
               <p>{m.description}</p>
               <span>
-                {m.min}–8 players{state.settings.mode === key && <Check size={17} />}
+                {m.min}–8 players
+                {state.settings.mode === key && <Check size={17} />}
               </span>
             </button>
           );
         })}
       </div>
-      <button className="text-button more-toggle" onClick={() => setMore(!more)}>
+      <button
+        className="text-button more-toggle"
+        onClick={() => setMore(!more)}
+      >
         Four more ways to make a scene
         <ChevronDown size={16} />
       </button>
@@ -942,9 +1017,15 @@ function Lobby({ state, me, host, act, onMic }) {
       {settings && (
         <div className="room-settings">
           <label className="field">
-            {state.settings.mode === "classic" ? "Turns per performer" : "Rounds"}
+            {state.settings.mode === "classic"
+              ? "Turns per performer"
+              : "Rounds"}
             <select
-              aria-label={state.settings.mode === "classic" ? "Turns per performer" : "Rounds"}
+              aria-label={
+                state.settings.mode === "classic"
+                  ? "Turns per performer"
+                  : "Rounds"
+              }
               disabled={!host}
               value={state.settings.rounds}
               onChange={(e) => change({ rounds: Number(e.target.value) })}
@@ -973,7 +1054,9 @@ function Lobby({ state, me, host, act, onMic }) {
                 <select
                   disabled={!host}
                   value={state.settings.chainLength}
-                  onChange={(e) => change({ chainLength: Number(e.target.value) })}
+                  onChange={(e) =>
+                    change({ chainLength: Number(e.target.value) })
+                  }
                 >
                   <option value={0}>Everyone contributes once</option>
                   <option value={3}>3 contributions</option>
@@ -996,7 +1079,9 @@ function Lobby({ state, me, host, act, onMic }) {
               <select
                 disabled={!host}
                 value={state.settings.performanceSeconds}
-                onChange={(e) => change({ performanceSeconds: Number(e.target.value) })}
+                onChange={(e) =>
+                  change({ performanceSeconds: Number(e.target.value) })
+                }
               >
                 {[30, 40, 60].map((n) => (
                   <option value={n} key={n}>
@@ -1012,7 +1097,9 @@ function Lobby({ state, me, host, act, onMic }) {
         <button className="mic-check" onClick={onMic}>
           {me.mic ? <Check size={23} /> : <Mic size={23} />}
           <span>
-            <strong>{me.mic ? "Microphone checked" : "A quick mic check?"}</strong>
+            <strong>
+              {me.mic ? "Microphone checked" : "A quick mic check?"}
+            </strong>
             <small>
               {me.mic
                 ? "You’re ready to be ridiculous."
@@ -1023,7 +1110,10 @@ function Lobby({ state, me, host, act, onMic }) {
         </button>
         <div className="ready-controls">
           {me.spectator ? (
-            <button className="button outline" onClick={() => act("seat", { spectator: false })}>
+            <button
+              className="button outline"
+              onClick={() => act("seat", { spectator: false })}
+            >
               <Plus size={17} />
               Take a player seat
             </button>
@@ -1036,13 +1126,20 @@ function Lobby({ state, me, host, act, onMic }) {
                 <Check size={18} />
                 {me.ready ? "I’m ready!" : "Ready up"}
               </button>
-              <button className="text-button" onClick={() => act("seat", { spectator: true })}>
+              <button
+                className="text-button"
+                onClick={() => act("seat", { spectator: true })}
+              >
                 Watch instead
               </button>
             </>
           )}
           {host && (
-            <button className="button primary" disabled={!canStart} onClick={() => act("start")}>
+            <button
+              className="button primary"
+              disabled={!canStart}
+              onClick={() => act("start")}
+            >
               Let’s make noise
               <ArrowRight size={18} />
             </button>
@@ -1077,7 +1174,13 @@ function Lobby({ state, me, host, act, onMic }) {
   );
 }
 
-function TextAction({ label, placeholder, button = "Submit", onSubmit, initial = "" }) {
+function TextAction({
+  label,
+  placeholder,
+  button = "Submit",
+  onSubmit,
+  initial = "",
+}) {
   const [value, setValue] = useState(initial),
     [busy, setBusy] = useState(false);
   return (
@@ -1134,7 +1237,11 @@ function Game({ state: s, me, session, host, act, action, upload }) {
           <Avatar kind="star" size={130} />
           <Sparkles size={36} />
         </div>
-        <h1>{mode === "gartic" ? "You made quite a story." : "A round of applause."}</h1>
+        <h1>
+          {mode === "gartic"
+            ? "You made quite a story."
+            : "A round of applause."}
+        </h1>
         <p>
           {mode === "gartic"
             ? "One little prompt. So many questionable interpretations."
@@ -1163,9 +1270,13 @@ function Game({ state: s, me, session, host, act, action, upload }) {
             Play again
           </button>
         ) : (
-          <p className="notice">The host can bring everyone back for another game.</p>
+          <p className="notice">
+            The host can bring everyone back for another game.
+          </p>
         )}
-        <p className="small muted">Play Again deletes this match’s recordings.</p>
+        <p className="small muted">
+          Play Again deletes this match’s recordings.
+        </p>
       </section>
     );
   if (phase === "chainReveal") {
@@ -1211,7 +1322,8 @@ function Game({ state: s, me, session, host, act, action, upload }) {
                   />
                 ) : (
                   <p className="muted">
-                    {e.reason}. The next player received the labeled replacement “A squeaky door”.
+                    {e.reason}. The next player received the labeled replacement
+                    “A squeaky door”.
                   </p>
                 )}
               </div>
@@ -1226,7 +1338,9 @@ function Game({ state: s, me, session, host, act, action, upload }) {
             </div>
             <ArrowRight />
             <div>
-              <span>{last.type === "audio" ? "ENDED WITH THIS SOUND" : "ENDED AS"}</span>
+              <span>
+                {last.type === "audio" ? "ENDED WITH THIS SOUND" : "ENDED AS"}
+              </span>
               {last.type === "text" ? (
                 <strong>{last.text}</strong>
               ) : last.type === "audio" ? (
@@ -1259,13 +1373,17 @@ function Game({ state: s, me, session, host, act, action, upload }) {
                 <input
                   type="checkbox"
                   checked={s.autoplay}
-                  onChange={(e) => act("autoplay", { enabled: e.target.checked })}
+                  onChange={(e) =>
+                    act("autoplay", { enabled: e.target.checked })
+                  }
                 />
                 Autoplay · 12s per step
               </label>
             </>
           ) : (
-            <span className="muted">The host is running the reveal. Settle in.</span>
+            <span className="muted">
+              The host is running the reveal. Settle in.
+            </span>
           )}
         </div>
       </section>
@@ -1280,7 +1398,8 @@ function Game({ state: s, me, session, host, act, action, upload }) {
         {mode === "detective" ? (
           <>
             <p>
-              The outsider was <strong>{person(s.voteResult.outsider)?.name}</strong>.
+              The outsider was{" "}
+              <strong>{person(s.voteResult.outsider)?.name}</strong>.
             </p>
             <p>
               {s.voteResult.caught
@@ -1292,11 +1411,14 @@ function Game({ state: s, me, session, host, act, action, upload }) {
                 ? "Their final guess was correct."
                 : "Their final guess did not match."}
             </p>
-            <p className="quote">Final guess: {s.outsiderGuess || "No guess"}</p>
+            <p className="quote">
+              Final guess: {s.outsiderGuess || "No guess"}
+            </p>
             <div className="vote-summary">
               {Object.entries(s.voteResult.ballots).map(([id, b]) => (
                 <p key={id}>
-                  {person(id)?.name} → {b.target ? person(b.target)?.name : "Abstained"}
+                  {person(id)?.name} →{" "}
+                  {b.target ? person(b.target)?.name : "Abstained"}
                 </p>
               ))}
             </div>
@@ -1313,7 +1435,9 @@ function Game({ state: s, me, session, host, act, action, upload }) {
                     </strong>
                     <p>
                       {e.points} points{" "}
-                      {e.points === s.voteResult[0]?.points ? "· Shared spotlight" : ""}
+                      {e.points === s.voteResult[0]?.points
+                        ? "· Shared spotlight"
+                        : ""}
                     </p>
                     <PlayerAudio session={session} audioId={e.audioId} />
                   </div>
@@ -1341,10 +1465,17 @@ function Game({ state: s, me, session, host, act, action, upload }) {
             </div>
           </>
         )}
-        {host ? next : <p className="muted">Waiting for the host to continue…</p>}
+        {host ? (
+          next
+        ) : (
+          <p className="muted">Waiting for the host to continue…</p>
+        )}
       </section>
     );
-  if (phase === "handoff" || (s.submitted && ["record", "interpret", "seed"].includes(phase)))
+  if (
+    phase === "handoff" ||
+    (s.submitted && ["record", "interpret", "seed"].includes(phase))
+  )
     return (
       <section className="game-stage">
         <div className="done-orb">
@@ -1361,9 +1492,16 @@ function Game({ state: s, me, session, host, act, action, upload }) {
           {s.players
             .filter((p) => !p.spectator)
             .map((p) => (
-              <span key={p.id} className={s.completed.includes(p.id) ? "complete" : ""}>
+              <span
+                key={p.id}
+                className={s.completed.includes(p.id) ? "complete" : ""}
+              >
                 <Avatar kind={p.avatar} size={45} />
-                {s.completed.includes(p.id) ? <Check size={14} /> : <Clock size={14} />}
+                {s.completed.includes(p.id) ? (
+                  <Check size={14} />
+                ) : (
+                  <Clock size={14} />
+                )}
               </span>
             ))}
         </div>
@@ -1375,15 +1513,21 @@ function Game({ state: s, me, session, host, act, action, upload }) {
       <section className="game-stage">
         <Eye className="stage-icon" />
         <h1>A front-row seat.</h1>
-        <p>You’re spectating this match. Join a player seat in the next lobby.</p>
+        <p>
+          You’re spectating this match. Join a player seat in the next lobby.
+        </p>
       </section>
     );
   if (phase === "choose")
     return (
       <section className="game-stage">
-        <span className="eyebrow">{performer ? "YOU’RE UP" : "THE NEXT SOUND IS BREWING"}</span>
+        <span className="eyebrow">
+          {performer ? "YOU’RE UP" : "THE NEXT SOUND IS BREWING"}
+        </span>
         <h1>
-          {performer ? "What’s your noise?" : `${person(s.performerIds[0])?.name} is choosing.`}
+          {performer
+            ? "What’s your noise?"
+            : `${person(s.performerIds[0])?.name} is choosing.`}
         </h1>
         <p>
           {performer
@@ -1394,8 +1538,15 @@ function Game({ state: s, me, session, host, act, action, upload }) {
           <>
             <div className="prompt-choices">
               {s.choices.map((p) => (
-                <button key={p.id} onClick={() => act("pick", { promptId: p.id })}>
-                  <span>{p.difficulty === "hard" ? "A LITTLE WEIRD" : "EVERYDAY SOUND"}</span>
+                <button
+                  key={p.id}
+                  onClick={() => act("pick", { promptId: p.id })}
+                >
+                  <span>
+                    {p.difficulty === "hard"
+                      ? "A LITTLE WEIRD"
+                      : "EVERYDAY SOUND"}
+                  </span>
                   <strong>{p.phrase}</strong>
                   <ArrowRight size={20} />
                 </button>
@@ -1492,7 +1643,10 @@ function Game({ state: s, me, session, host, act, action, upload }) {
                 : "Watch closely. Who seems out of place?"}
           </p>
         ) : !s.participant ? (
-          <p>Enjoy the performance. Guessing opens when you join a player seat next match.</p>
+          <p>
+            Enjoy the performance. Guessing opens when you join a player seat
+            next match.
+          </p>
         ) : s.progress?.correct ? (
           <div className="correct-answer">
             <Check size={28} />
@@ -1504,7 +1658,8 @@ function Game({ state: s, me, session, host, act, action, upload }) {
             <p className="hint">A small hint: {s.hint}</p>
             {s.progress?.total > 0 && (
               <p className="component-progress">
-                {s.progress.components.length} / {s.progress.total} parts discovered
+                {s.progress.components.length} / {s.progress.total} parts
+                discovered
               </p>
             )}
             <TextAction
@@ -1523,7 +1678,9 @@ function Game({ state: s, me, session, host, act, action, upload }) {
       <section className="game-stage">
         <span className="eyebrow">START SOMETHING STRANGE</span>
         <h1>A tiny idea. A big journey.</h1>
-        <p>Write a sound your friends can imitate. Keep it kind and playable.</p>
+        <p>
+          Write a sound your friends can imitate. Keep it kind and playable.
+        </p>
         <TextAction
           label="Your starting phrase"
           initial={s.seed}
@@ -1548,7 +1705,9 @@ function Game({ state: s, me, session, host, act, action, upload }) {
         <h1>
           {s.task?.text ||
             s.prompt ||
-            (mode === "foley" ? "Five seconds of movie magic." : "Make your masterpiece.")}
+            (mode === "foley"
+              ? "Five seconds of movie magic."
+              : "Make your masterpiece.")}
         </h1>
         {s.task?.replacement && (
           <p className="notice">
@@ -1558,7 +1717,10 @@ function Game({ state: s, me, session, host, act, action, upload }) {
         {mode === "foley" && (
           <>
             <Foley scene={s.animation} playing playKey={foleyPlay} />
-            <button className="text-button" onClick={() => setFoleyPlay((k) => k + 1)}>
+            <button
+              className="text-button"
+              onClick={() => setFoleyPlay((k) => k + 1)}
+            >
               <Play size={16} />
               Replay silent scene
             </button>
@@ -1586,7 +1748,9 @@ function Game({ state: s, me, session, host, act, action, upload }) {
         {s.task?.audioId ? (
           <PlayerAudio session={session} audioId={s.task.audioId} auto />
         ) : (
-          <p className="notice">The sound is missing. Use the replacement prompt: {s.task?.text}</p>
+          <p className="notice">
+            The sound is missing. Use the replacement prompt: {s.task?.text}
+          </p>
         )}
         <TextAction
           label="Your interpretation"
@@ -1604,9 +1768,16 @@ function Game({ state: s, me, session, host, act, action, upload }) {
       <section className="game-stage">
         <span className="eyebrow">THE ANONYMOUS LISTENING PARTY</span>
         <h1>{entry?.label || "Sound check"}</h1>
-        <p>Listen to every take before you vote. Familiar voices may still be recognizable.</p>
+        <p>
+          Listen to every take before you vote. Familiar voices may still be
+          recognizable.
+        </p>
         {mode === "foley" && (
-          <Foley scene={s.animation} playing={foleyPlay > 0} playKey={foleyPlay} />
+          <Foley
+            scene={s.animation}
+            playing={foleyPlay > 0}
+            playKey={foleyPlay}
+          />
         )}
         <PlayerAudio
           session={session}
@@ -1629,12 +1800,17 @@ function Game({ state: s, me, session, host, act, action, upload }) {
       </section>
     );
   }
-  if (phase === "vote") return <Voting state={s} act={act} action={action} session={session} />;
+  if (phase === "vote")
+    return <Voting state={s} act={act} action={action} session={session} />;
   if (phase === "outsider")
     return (
       <section className="game-stage">
         <span className="eyebrow">ONE LAST CHANCE</span>
-        <h1>{s.outsider ? "What was the mystery sound?" : "The outsider gets a final guess."}</h1>
+        <h1>
+          {s.outsider
+            ? "What was the mystery sound?"
+            : "The outsider gets a final guess."}
+        </h1>
         <p>The votes are locked. No more clues.</p>
         {s.outsider ? (
           <TextAction
@@ -1669,7 +1845,9 @@ function LiveMeter() {
   return <Wave level={level} />;
 }
 function Voting({ state: s, act, action, session }) {
-  const [order, setOrder] = useState(s.entries?.filter((e) => !e.own).map((e) => e.id) || []);
+  const [order, setOrder] = useState(
+    s.entries?.filter((e) => !e.own).map((e) => e.id) || [],
+  );
   const [favorite, setFavorite] = useState(null);
   const mode = s.settings.mode;
   if (!s.participant)
@@ -1726,7 +1904,10 @@ function Voting({ state: s, act, action, session }) {
                 </button>
               ))}
           </div>
-          <button className="button primary" onClick={() => act("vote", { target: favorite })}>
+          <button
+            className="button primary"
+            onClick={() => act("vote", { target: favorite })}
+          >
             {favorite ? "Lock my vote" : "Abstain"}
             <Check size={17} />
           </button>
@@ -1777,14 +1958,23 @@ function Voting({ state: s, act, action, session }) {
               );
             })}
           </div>
-          {!order.length && <p>No other recordings were submitted. You can abstain.</p>}
+          {!order.length && (
+            <p>No other recordings were submitted. You can abstain.</p>
+          )}
           <button
             className="button primary"
             onClick={() =>
-              act("vote", { ranking: mode === "ranking" ? order : favorite ? [favorite] : [] })
+              act("vote", {
+                ranking:
+                  mode === "ranking" ? order : favorite ? [favorite] : [],
+              })
             }
           >
-            {mode === "ranking" ? "Lock this ranking" : favorite ? "Lock my vote" : "Abstain"}
+            {mode === "ranking"
+              ? "Lock this ranking"
+              : favorite
+                ? "Lock my vote"
+                : "Abstain"}
             <Check size={17} />
           </button>
         </>
@@ -1797,8 +1987,8 @@ function AudioSettings() {
   return (
     <>
       <p className="muted">
-        Player voices always come first. Effects pause during live audio, recording, and reveal
-        playback.
+        Player voices always come first. Effects pause during live audio,
+        recording, and reveal playback.
       </p>
       {[
         ["voice", "Player voices"],
@@ -1828,8 +2018,9 @@ function AudioSettings() {
         Preview effects
       </button>
       <p className="small muted">
-        No background music or announcer voices are included. Live audio uses peer connections. Some
-        networks require a TURN relay configured by the host operator.
+        No background music or announcer voices are included. Live audio uses
+        peer connections. Some networks require a TURN relay configured by the
+        host operator.
       </p>
     </>
   );
