@@ -15,10 +15,20 @@
 recorded, so they are **not confirmed to be ElevenLabs output**. Treat licensing as unverified until they are regenerated or replaced with
 files whose source is recorded here. Player performances are never AI-generated.
 
-## Announcer lines (not generated yet)
+## Announcer lines
 
-`public/audio/announce/your-turn.mp3`, `time-to-guess.mp3`, `lets-hear.mp3` are produced by `scripts/generate-announcer.mjs` through the
-official ElevenLabs text-to-speech API. They have not been generated: this needs an API key and voice id from the owner. The game works without them.
+Generated 2026-11-02 with the official ElevenLabs text-to-speech API (`scripts/generate-announcer.mjs`), model `eleven_multilingual_v2`,
+stock premade voice "Roger - Laid-Back, Casual, Resonant". No player voice was cloned. Played only when the Announcer slider is above zero,
+and never during a performance, recording or replay.
+
+| File                       | Line                        | Bytes  |
+| -------------------------- | --------------------------- | ------ |
+| announce/your-turn.mp3     | "Your turn."                | 15,089 |
+| announce/time-to-guess.mp3 | "Time to guess."            | 17,597 |
+| announce/lets-hear.mp3     | "Let's hear what happened." | 21,776 |
+
+Status: generated and format-checked. **Not yet listened to by a human**; trim or normalize them if they sound off. Licensing follows the
+ElevenLabs terms of the account that generated them.
 
 ## Music
 

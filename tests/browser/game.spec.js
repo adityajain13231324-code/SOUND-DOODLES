@@ -361,7 +361,9 @@ test("Gartic awards: friendly vote after the reveal, self-votes blocked, winners
   const g = await group(browser);
   try {
     await configure(g, "gartic", async (host) => {
-      await host.getByLabel("Friendly awards vote after the reveal").check();
+      const box = host.getByLabel("Friendly awards vote after the reveal");
+      await box.click();
+      await expect(box).toBeChecked();
     });
     await expect.poll(() => g.room.settings.awards).toBe(true);
     for (let r = 0; r < 4; r++) {

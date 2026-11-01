@@ -9,4 +9,4 @@
 | Human listening check of the sound effects and the reveal show                                                                                                                        | Manual                               | **Not done**                       |
 | TURN relay behavior on restrictive networks                                                                                                                                           | Manual                               | **Not done** (no relay configured) |
 
-Not yet verified: announcer voice files (not generated, needs an ElevenLabs key), and a human listening check of the synthesized music.
+Not yet verified by a human: the three generated announcer lines and the synthesized music need a listening check.

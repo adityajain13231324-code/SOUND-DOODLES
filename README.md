@@ -32,7 +32,7 @@ node scripts/shots.mjs   # screenshots of every theme at desktop and phone sizes
 ## Audio extras
 
 - **Music:** an optional, quiet synthesized loop (Audio settings, off by default). It fades out while anyone performs, records or replays a sound.
-- **Announcer lines:** optional and sparse ("Your turn", "Time to guess", "Let's hear what happened"). The mp3 files are not committed.
+- **Announcer lines:** optional and sparse ("Your turn", "Time to guess", "Let's hear what happened"). The three mp3 files are included (generated with ElevenLabs, stock voice).
   To generate them with ElevenLabs (costs credits, run once, then listen and commit the files):
   `ELEVENLABS_API_KEY=... node scripts/generate-announcer.mjs` (a stock voice is picked for you)``. Use a stock or designed voice, never a cloned player voice.
 - **Gartic awards:** the host can enable a friendly awards vote after the reveal (funniest transformation, best sound, most unexpected, most accurate).
