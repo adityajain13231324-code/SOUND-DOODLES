@@ -1,0 +1,104 @@
+import {test,expect} from '@playwright/test';
+import {createApp} from '../../server/index.js';
+let app;const base='http://localhost:3101';
+test.beforeAll(async()=>{process.env.PUBLIC_ORIGIN=base;app=await createApp({production:true,port:3101});});
+test.afterAll(async()=>{await app.close();});
+
+async function group(browser,count=4){
+ const contexts=[],pages=[];const errors=[];
+ for(let i=0;i<count;i++){
+   const context=await browser.newContext({permissions:['microphone'],viewport:{width:1280,height:900}});contexts.push(context);
+   await context.addInitScript(()=>{window.__peers=[];const Native=window.RTCPeerConnection;window.RTCPeerConnection=class extends Native{constructor(...args){super(...args);window.__peers.push(this);}};});
+   const page=await context.newPage();pages.push(page);page.on('pageerror',e=>errors.push(e.message));await page.goto(base);
+   await page.getByRole('button',{name:i?'Join a room':'Create a room',exact:true}).click();
+   await page.getByLabel('Your nickname').fill(`Friend ${i+1}`);
+   if(i)await page.getByLabel('Room code').fill(new URL(pages[0].url()).searchParams.get('room'));
+   await page.getByRole('button',{name:i?'Join room':'Create room',exact:true}).click();
+   await expect(page.getByText('Tonight’s game')).toBeVisible();
+ }
+ const code=new URL(pages[0].url()).searchParams.get('room'),room=app.rooms.get(code);
+ await Promise.all(pages.map(async page=>{await page.getByRole('button',{name:'A quick mic check?'}).click();await page.getByRole('button',{name:'Test microphone',exact:true}).click();await expect(page.getByRole('button',{name:'Stop recording',exact:true})).toBeVisible();await page.waitForTimeout(350);await page.getByRole('button',{name:'Stop recording',exact:true}).click();await expect(page.getByRole('button',{name:'Record again',exact:true})).toBeVisible();await page.getByRole('button',{name:'Done',exact:true}).click();}));
+ return {contexts,pages,room,errors,close:async()=>{for(const c of contexts)await c.close();}};
+}
+async function configure(g,mode){
+ const host=g.pages[0];console.log('configure',mode);
+ if(!['classic','gartic'].includes(mode))await host.getByRole('button',{name:'Four more ways to make a scene'}).click();
+ const names={classic:'Classic',gartic:'Gartic Sounds',duo:'Duo Orchestra',detective:'Sound Detective',foley:'Five-Second Foley',ranking:'Blind Ranking'};
+ if(mode!=='classic')await host.locator(mode==='gartic'?'.lobby-mode':'.extra-mode-grid button').filter({hasText:names[mode]}).click();
+ await host.getByRole('button',{name:'Room settings'}).click();console.log('settings open');
+ await host.getByLabel(mode==='classic'?'Turns per performer':'Rounds',{exact:true}).selectOption('1');
+ await expect.poll(()=>g.room.settings.rounds).toBe(1);console.log('rounds set');
+ await Promise.all(g.pages.map(p=>p.getByRole('button',{name:'Ready up',exact:true}).click()));
+ console.log('ready',g.room.players.map(p=>({name:p.name,ready:p.ready,mic:p.mic})));await host.getByRole('button',{name:'Let’s make noise'}).click();console.log('started',g.room.phase);
+ await expect.poll(()=>g.room.phase).not.toBe('lobby');
+}
+async function expire(room){room.deadline=Date.now()-1;await expect.poll(()=>room.deadline===null||room.deadline>Date.now()).toBeTruthy();}
+function pageFor(g,id){return g.pages[g.room.players.findIndex(p=>p.id===id)];}
+async function recordAll(g){await Promise.all(g.pages.map(async page=>{await page.getByRole('button',{name:'Start recording',exact:true}).click();await expect(page.getByRole('button',{name:'Stop recording',exact:true})).toBeVisible();await page.waitForTimeout(650);await page.getByRole('button',{name:'Stop recording',exact:true}).click();await page.getByRole('button',{name:'Submit this sound',exact:true}).click();}));await expect.poll(()=>g.room.phase).toBe('handoff');await expire(g.room);}
+
+test('landing, four persistent themes, mobile layout and keyboard entry',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await expect(page.getByRole('heading',{level:1})).toContainText('Make some');
+ await page.screenshot({path:'../../work/landing-desktop.png',fullPage:true});
+ for(const [key,name] of [['paper','Paper Playground'],['neon','Neon Arcade'],['sunset','Sunset Lounge'],['midnight','Midnight Studio']]){
+   await page.getByRole('button',{name:'Change theme',exact:true}).click();await page.getByRole('button',{name:new RegExp(name)}).click();await page.getByRole('button',{name:'Close',exact:true}).click();
+   await expect(page.locator('html')).toHaveAttribute('data-theme',key);await page.reload();await expect(page.locator('html')).toHaveAttribute('data-theme',key);
+   await page.screenshot({path:`../../work/theme-${key}.png`,fullPage:true});
+ }
+ await page.setViewportSize({width:390,height:844});await page.screenshot({path:'../../work/landing-mobile.png',fullPage:true});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+ await page.getByRole('button',{name:'Create a room',exact:true}).click();await page.getByLabel('Your nickname').fill('Mobile friend');await page.keyboard.press('Enter');await expect(page.getByText('Tonight’s game')).toBeVisible();
+ await page.screenshot({path:'../../work/lobby-mobile.png',fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();expect(errors).toEqual([]);
+});
+test('Classic: four independent browser sessions, real WebRTC with simulated microphones, full match and restart',async({browser})=>{
+ const g=await group(browser);try{
+   await g.pages[0].screenshot({path:'../../work/lobby-desktop.png',fullPage:true});await configure(g,'classic');
+   let verifiedAudio=false;
+   while(g.room.phase!=='results'){
+     console.log('classic loop',g.room.round,g.room.phase);const performer=pageFor(g,g.room.performerIds[0]);await performer.locator('.prompt-choices button').first().click();await expect.poll(()=>g.room.phase).toBe('prepare');await expire(g.room);
+     const guesser=pageFor(g,g.room.eligible[0]);await expect(guesser.getByLabel('Your private guess')).toBeVisible();
+     if(!verifiedAudio){
+       await expect.poll(async()=>guesser.evaluate(async()=>{const stats=await Promise.all(window.__peers.map(p=>p.getStats()));return stats.some(s=>[...s.values()].some(v=>v.type==='inbound-rtp'&&v.kind==='audio'&&v.bytesReceived>0));}),{timeout:20000}).toBeTruthy();
+       await performer.screenshot({path:'../../work/classic-performer.png',fullPage:true});await guesser.screenshot({path:'../../work/classic-guesser.png',fullPage:true});verifiedAudio=true;
+     }
+     const answer=g.room.prompt.phrase;
+     await Promise.all(g.room.eligible.map(async id=>{const page=pageFor(g,id);await page.getByLabel('Your private guess').fill(answer);await page.getByRole('button',{name:'Guess',exact:true}).click();}));
+     await expect.poll(()=>g.room.phase).toBe('roundReveal');await g.pages[0].getByRole('button',{name:'Next',exact:true}).click();
+   }
+   await expect(g.pages[0].getByRole('heading',{name:'A round of applause.'})).toBeVisible();await g.pages[0].screenshot({path:'../../work/results.png',fullPage:true});await g.pages[0].getByRole('button',{name:'Play again',exact:true}).click();await expect(g.pages[0].getByText('Tonight’s game')).toBeVisible();expect(g.errors).toEqual([]);
+ }finally{await g.close();}
+});
+test('Gartic: real MediaRecorder upload, preview, private routing, text/audio alternation and synchronized reveal',async({browser})=>{
+ const g=await group(browser);try{
+   await configure(g,'gartic');await g.pages[0].screenshot({path:'../../work/gartic-record.png',fullPage:true});
+   for(let r=0;r<4;r++){
+     if(r%2===0)await recordAll(g);
+     else {await Promise.all(g.pages.map(async(page,i)=>{await expect(page.locator('audio')).toBeVisible();await page.getByLabel('Your interpretation').fill(`A robot with hiccups ${r} ${i}`);await page.getByRole('button',{name:'Submit',exact:true}).click();}));await expire(g.room);}
+   }
+   await expect.poll(()=>g.room.phase).toBe('chainReveal');
+   while(g.room.phase==='chainReveal'){
+     const first=g.pages[0];const entries=g.room.chains[g.room.ids[g.room.revealChain]].entries.length;
+     if(g.room.revealStep===2)await first.screenshot({path:'../../work/gartic-reveal.png',fullPage:true});
+     if(g.room.revealStep<entries-1)await first.getByRole('button',{name:'Reveal next step',exact:true}).click();
+     else await first.getByRole('button',{name:g.room.revealChain===3?'Finish the show':'Next chain',exact:true}).click();
+   }
+   await expect(g.pages[0].getByRole('heading',{name:'You made quite a story.'})).toBeVisible();expect(g.room.audio.size).toBe(8);expect(g.errors).toEqual([]);
+ }finally{await g.close();}
+});
+for(const mode of ['duo','detective','foley','ranking'])test(`${mode}: complete browser match to results`,async({browser})=>{
+ const g=await group(browser);try{
+   await configure(g,mode);
+   if(mode==='duo'){
+     await expire(g.room);const audience=pageFor(g,g.room.eligible[0]);await expect(audience.getByLabel('Your private guess')).toBeVisible();
+     await expect.poll(async()=>audience.evaluate(async()=>{const stats=await Promise.all(window.__peers.map(p=>p.getStats()));return stats.filter(s=>[...s.values()].some(v=>v.type==='inbound-rtp'&&v.kind==='audio'&&v.bytesReceived>0)).length;}),{timeout:20000}).toBe(2);
+     await Promise.all(g.room.eligible.map(async id=>{const p=pageFor(g,id);await p.getByLabel('Your private guess').fill(g.room.prompt.phrase);await p.getByRole('button',{name:'Guess',exact:true}).click();}));
+   }else if(mode==='detective'){
+     await expire(g.room);for(let i=0;i<4;i++){await expect.poll(()=>g.room.phase).toBe('perform');await expire(g.room);}await expect.poll(()=>g.room.phase).toBe('vote');
+     await Promise.all(g.pages.map(p=>p.getByRole('button',{name:'Abstain',exact:true}).click()));const outsider=pageFor(g,g.room.outsider);await outsider.getByLabel('Your final guess').fill(g.room.prompt.phrase);await outsider.getByRole('button',{name:'Reveal the truth'}).click();
+   }else{
+     await recordAll(g);while(g.room.phase==='listening'){await g.pages[0].getByRole('button',{name:'Next',exact:true}).click();await g.pages[0].waitForTimeout(150);}
+     await expect.poll(()=>g.room.phase).toBe('vote');await g.pages[0].screenshot({path:`../../work/${mode}-vote.png`,fullPage:true});
+     await Promise.all(g.pages.map(async p=>{if(mode==='foley'){await p.locator('input[type=radio]').first().check();await p.getByRole('button',{name:'Lock my vote'}).click();}else await p.getByRole('button',{name:'Lock this ranking'}).click();}));
+   }
+   await expect.poll(()=>g.room.phase).toBe('roundReveal');await g.pages[0].getByRole('button',{name:'Next',exact:true}).click();await expect(g.pages[0].getByRole('heading',{name:'A round of applause.'})).toBeVisible();expect(g.errors).toEqual([]);
+ }finally{await g.close();}
+});
