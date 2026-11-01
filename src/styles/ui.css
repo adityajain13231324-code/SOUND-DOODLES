@@ -891,3 +891,31 @@ h3 {
 [data-theme="paper"] .badge-mint {
   color: #fffdf7;
 }
+
+/* Phones: popovers become bottom sheets so they can never run off the screen. */
+@media (max-width: 559px) {
+  .popover-panel {
+    position: fixed;
+    top: auto;
+    left: var(--s-4);
+    right: var(--s-4);
+    bottom: calc(var(--s-4) + env(safe-area-inset-bottom, 0px));
+    min-width: 0;
+    max-height: 70dvh;
+    overflow-y: auto;
+    transform-origin: bottom center;
+  }
+  .popover-panel.align-end,
+  .popover-panel.align-start {
+    left: var(--s-4);
+    right: var(--s-4);
+  }
+}
+.drawer .room-settings {
+  display: grid;
+  gap: var(--s-4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}

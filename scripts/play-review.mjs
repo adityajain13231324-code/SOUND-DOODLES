@@ -10,9 +10,13 @@ await mkdir(out, { recursive: true });
 const app = await createApp({ production: true, port });
 const browser = await chromium.launch({
   channel: "chrome",
-  args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"],
+  args: [
+    "--use-fake-device-for-media-stream",
+    "--use-fake-ui-for-media-stream",
+  ],
 });
-const shot = (page, name) => page.screenshot({ path: `${out}/${name}.png`, fullPage: true });
+const shot = (page, name) =>
+  page.screenshot({ path: `${out}/${name}.png`, fullPage: true });
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 const expire = async (room) => {
   room.deadline = Date.now() - 1;
@@ -28,27 +32,50 @@ async function makeGroup() {
       hasTouch: true,
       permissions: ["microphone"],
     });
-    await ctx.addInitScript((t) => localStorage.setItem("sd-theme", t), process.env.THEME || "midnight");
+    await ctx.addInitScript(
+      (t) => localStorage.setItem("sd-theme", t),
+      process.env.THEME || "midnight",
+    );
     const page = await ctx.newPage();
     await page.goto(base);
     await page
-      .getByRole("button", { name: i ? "Join a room" : "Create a room", exact: true })
+      .getByRole("button", {
+        name: i ? "Join a room" : "Create a room",
+        exact: true,
+      })
       .click();
-    await page.getByLabel("Your nickname").fill(["Mira", "Dev", "Sana", "Leo"][i]);
+    await page
+      .getByLabel("Your nickname")
+      .fill(["Mira", "Dev", "Sana", "Leo"][i]);
     if (i)
-      await page.getByLabel("Room code").fill(new URL(pages[0].url()).searchParams.get("room"));
-    await page.getByRole("button", { name: i ? "Join room" : "Create room", exact: true }).click();
+      await page
+        .getByLabel("Room code")
+        .fill(new URL(pages[0].url()).searchParams.get("room"));
+    await page
+      .getByRole("button", {
+        name: i ? "Join room" : "Create room",
+        exact: true,
+      })
+      .click();
     await page.getByText("Tonight’s game").waitFor();
     pages.push(page);
   }
   const room = app.rooms.get(new URL(pages[0].url()).searchParams.get("room"));
   for (const page of pages) {
     await page.getByRole("button", { name: "A quick mic check?" }).click();
-    await page.getByRole("button", { name: "Test microphone", exact: true }).click();
-    await page.getByRole("button", { name: "Stop recording", exact: true }).waitFor();
+    await page
+      .getByRole("button", { name: "Test microphone", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Stop recording", exact: true })
+      .waitFor();
     await pause(400);
-    await page.getByRole("button", { name: "Stop recording", exact: true }).click();
-    await page.getByRole("button", { name: "Record again", exact: true }).waitFor();
+    await page
+      .getByRole("button", { name: "Stop recording", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Record again", exact: true })
+      .waitFor();
     await shot(page, "mic-check-" + pages.indexOf(page)).catch(() => {});
     await page.getByRole("button", { name: "Done", exact: true }).click();
   }
@@ -57,7 +84,9 @@ async function makeGroup() {
 
 async function ready(g) {
   await Promise.all(
-    g.pages.map((p) => p.getByRole("button", { name: "Ready up", exact: true }).click()),
+    g.pages.map((p) =>
+      p.getByRole("button", { name: "Ready up", exact: true }).click(),
+    ),
   );
   await pause(300);
 }
@@ -104,7 +133,10 @@ async function ready(g) {
 {
   const g = await makeGroup();
   const host = g.pages[0];
-  await host.locator(".lobby-mode").filter({ hasText: "Gartic Sounds" }).click();
+  await host
+    .locator(".lobby-mode")
+    .filter({ hasText: "Gartic Sounds" })
+    .click();
   await shot(host, "gartic-1-lobby-selected");
   await ready(g);
   await host.getByRole("button", { name: "Let’s make noise" }).click();
@@ -113,21 +145,27 @@ async function ready(g) {
   const record = async () => {
     await Promise.all(
       g.pages.map(async (page) => {
-        await page.getByRole("button", { name: "Start recording", exact: true }).click();
+        await page
+          .getByRole("button", { name: "Start recording", exact: true })
+          .click();
         await pause(1400);
       }),
     );
     await shot(g.pages[1], "gartic-3-recording");
     await Promise.all(
       g.pages.map(async (page) => {
-        await page.getByRole("button", { name: "Stop recording", exact: true }).click();
+        await page
+          .getByRole("button", { name: "Stop recording", exact: true })
+          .click();
       }),
     );
     await pause(500);
     await shot(g.pages[1], "gartic-4-preview");
     await Promise.all(
       g.pages.map((page) =>
-        page.getByRole("button", { name: "Submit this sound", exact: true }).click(),
+        page
+          .getByRole("button", { name: "Submit this sound", exact: true })
+          .click(),
       ),
     );
     await pause(700);
@@ -138,12 +176,16 @@ async function ready(g) {
   const interpret = async (r) => {
     await Promise.all(
       g.pages.map(async (page, i) => {
-        await page.getByLabel("Your interpretation").fill(`A confused seagull ${r}${i}`);
+        await page
+          .getByLabel("Your interpretation")
+          .fill(`A confused seagull ${r}${i}`);
       }),
     );
     if (r === 1) await shot(g.pages[2], "gartic-6-interpret");
     await Promise.all(
-      g.pages.map((page) => page.getByRole("button", { name: "Submit", exact: true }).click()),
+      g.pages.map((page) =>
+        page.getByRole("button", { name: "Submit", exact: true }).click(),
+      ),
     );
     await pause(500);
     await expire(g.room);
@@ -157,8 +199,10 @@ async function ready(g) {
   await shot(host, "gartic-7-reveal-start");
   let n = 0;
   while (g.room.phase === "chainReveal" && n < 40) {
-    const entries = g.room.chains[g.room.ids[g.room.revealChain]].entries.length;
-    if (g.room.revealChain === 0 && g.room.revealStep === 2) await shot(host, "gartic-8-reveal-mid");
+    const entries =
+      g.room.chains[g.room.ids[g.room.revealChain]].entries.length;
+    if (g.room.revealChain === 0 && g.room.revealStep === 2)
+      await shot(host, "gartic-8-reveal-mid");
     if (g.room.revealChain === 0 && g.room.revealStep === entries - 1)
       await shot(host, "gartic-9-chain-end");
     const next =

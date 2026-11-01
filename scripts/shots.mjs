@@ -13,7 +13,10 @@ await mkdir("shots", { recursive: true });
 const app = await createApp({ production: true, port });
 const browser = await chromium.launch({
   channel: "chrome",
-  args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"],
+  args: [
+    "--use-fake-device-for-media-stream",
+    "--use-fake-ui-for-media-stream",
+  ],
 });
 const settle = (page, ms = 1400) => page.waitForTimeout(ms);
 
@@ -33,34 +36,52 @@ for (const theme of themes) {
     page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
     const shot = async (name, full = true) => {
       await settle(page);
-      await page.screenshot({ path: `shots/${theme}-${width}-${name}.png`, fullPage: full });
+      await page.screenshot({
+        path: `shots/${theme}-${width}-${name}.png`,
+        fullPage: full,
+      });
     };
     await page.goto(base);
     await shot("1-landing");
-    await page.getByRole("button", { name: "Join a room", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Join a room", exact: true })
+      .click();
     await page.getByLabel("Room code").fill("ABC");
     await shot("2-join-modal", false);
     await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "Create a room", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Create a room", exact: true })
+      .click();
     await page.getByLabel("Your nickname").fill("Aditya");
-    await page.getByRole("button", { name: "Create room", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Create room", exact: true })
+      .click();
     await page.getByText("Tonight’s game").waitFor();
     await shot("3-lobby");
     await page.getByRole("button", { name: "A quick mic check?" }).click();
-    await page.getByRole("button", { name: "Test microphone", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Test microphone", exact: true })
+      .click();
     await page.waitForTimeout(700);
-    await page.getByRole("button", { name: "Stop recording", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Stop recording", exact: true })
+      .click();
     await page.getByRole("button", { name: "Done", exact: true }).click();
-    await page.getByRole("button", { name: "Four more ways to make a scene" }).click();
+    await page
+      .getByRole("button", { name: "Four more ways to make a scene" })
+      .click();
     await shot("4-lobby-modes");
     await page.getByRole("button", { name: "Room settings" }).click();
     await shot("5-settings-drawer", false);
     await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "Change theme", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Change theme", exact: true })
+      .click();
     await shot("6-theme-picker", false);
     await page.keyboard.press("Escape");
     await ctx.close();
-    if (errors.length) console.log(theme, width, "ERRORS", [...new Set(errors)].slice(0, 4));
+    if (errors.length)
+      console.log(theme, width, "ERRORS", [...new Set(errors)].slice(0, 4));
   }
 }
 await browser.close();
