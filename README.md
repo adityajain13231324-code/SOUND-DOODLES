@@ -26,7 +26,8 @@ npm run build && npm start
 npm test                 # 29 unit and socket tests
 npx playwright install chromium   # first time only (tests use the Chrome channel)
 npm run test:browser     # 9 browser tests: four sessions per mode, simulated microphones
-node scripts/shots.mjs   # screenshots of every theme at desktop and phone sizes into shots/
+node scripts/shots.mjs   # screenshots of every theme at 390, 768 and 1440 px into shots/
+npm run dev              # then open /styleguide (or #/styleguide) to see every component in all four themes
 ```
 
 ## Audio extras
@@ -61,4 +62,4 @@ Recordings are kept in server memory only. Unsubmitted uploads are deleted after
 with the room (at most 2 hours, or 10 minutes after everyone leaves). Clips are served only to players who are allowed to hear them.
 Classic rounds are never recorded.
 
-More detail: [architecture](docs/ARCHITECTURE.md), [test report](docs/TEST-REPORT.md), [audio assets](public/audio/MANIFEST.md).
+More detail: [UI overhaul, tokens and changelog](docs/UI-OVERHAUL.md), [architecture](docs/ARCHITECTURE.md), [test report](docs/TEST-REPORT.md), [audio assets](public/audio/MANIFEST.md).

@@ -8,8 +8,8 @@
 - `shared/modes.js` mode metadata shared by client and server.
 - `src/main.jsx` React client (screens per phase). `src/components.jsx` avatar, recorder, audio player, Foley animations.
   `src/audio.js` microphone, recording, level meter, WebRTC mesh and effect cues.
-- `src/styles.css` tokens and layout, one `:root[data-theme]` block per theme. `src/motion.css` the animation layer
-  (individual `translate`/`scale` properties, reduced-motion safe).
+- `src/App.jsx` shell, `src/screens/` one file per screen, `src/ui/` the UI kit, `src/theme.js` the theme engine.
+  `src/styles/` holds tokens (one `[data-theme]` block per theme), stage backdrops, kit and screen styles. See `docs/UI-OVERHAUL.md`.
 
 ## Audio topology
 

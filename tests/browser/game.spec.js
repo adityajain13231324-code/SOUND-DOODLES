@@ -113,6 +113,8 @@ async function configure(g, mode, extra) {
     .selectOption("1");
   await expect.poll(() => g.room.settings.rounds).toBe(1);
   if (extra) await extra(host);
+  // Settings live in a slide-over drawer; close it before the rest of the lobby is usable.
+  await host.keyboard.press("Escape");
   console.log("rounds set");
   await Promise.all(
     g.pages.map((p) =>
@@ -181,7 +183,7 @@ test("landing, four persistent themes, mobile layout and keyboard entry", async 
       .getByRole("button", { name: "Change theme", exact: true })
       .click();
     await page.getByRole("button", { name: new RegExp(name) }).click();
-    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page.keyboard.press("Escape");
     await expect(page.locator("html")).toHaveAttribute("data-theme", key);
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-theme", key);
