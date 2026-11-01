@@ -50,9 +50,16 @@ import {
   liveConnections,
   createMeter,
 } from "./audio.js";
+import "@fontsource-variable/dm-sans";
+import "@fontsource-variable/space-grotesk";
+import "@fontsource-variable/fraunces";
+import "@fontsource-variable/bricolage-grotesque";
 import "./styles.css";
 import "./motion.css";
 import "./awards.css";
+import "./guess.css";
+import "./reveal.css";
+import { GuessBox } from "./GuessBox.jsx";
 import { Awards, AwardsResult } from "./Awards.jsx";
 import { announce, announcerAvailable, syncMusic } from "./ambience.js";
 
@@ -464,9 +471,13 @@ function App() {
                       {MODES[state.settings.mode].name}
                     </span>
                     <span>
-                      {state.settings.mode === "gartic"
-                        ? `Step ${Math.min(state.chainRounds, state.contributionRound + 1)} of ${state.chainRounds}`
-                        : `Round ${Math.min(state.round + 1, state.totalRounds)} of ${state.totalRounds}`}
+                      {["chainReveal", "awards", "results"].includes(
+                        state.phase,
+                      )
+                        ? ""
+                        : state.settings.mode === "gartic"
+                          ? `Step ${Math.min(state.chainRounds, state.contributionRound + 1)} of ${state.chainRounds}`
+                          : `Round ${Math.min(state.round + 1, state.totalRounds)} of ${state.totalRounds}`}
                     </span>
                     {state.deadline && (
                       <span className={`timer ${seconds < 6 ? "urgent" : ""}`}>
@@ -496,17 +507,32 @@ function App() {
                     upload={upload}
                   />
                   {state.phase === "perform" && (
-                    <div className="live-bar">
+                    <div
+                      className={`live-bar ${/Tap Enable audio/.test(audioStatus) ? "attention" : ""}`}
+                    >
                       <Radio size={17} />
                       <span>{audioStatus || "Connecting live audio…"}</span>
-                      <button
-                        className="text-button"
-                        onClick={() =>
-                          window.dispatchEvent(new Event("enable-audio"))
-                        }
-                      >
-                        Enable audio
-                      </button>
+                      {!state.performers.includes(state.you) &&
+                        (/Tap Enable audio/.test(audioStatus) ? (
+                          <button
+                            className="button primary"
+                            onClick={() =>
+                              window.dispatchEvent(new Event("enable-audio"))
+                            }
+                          >
+                            <Volume2 size={17} />
+                            Tap to hear your friends
+                          </button>
+                        ) : (
+                          <button
+                            className="text-button"
+                            onClick={() =>
+                              window.dispatchEvent(new Event("enable-audio"))
+                            }
+                          >
+                            Enable audio
+                          </button>
+                        ))}
                       {state.performers.includes(state.you) && (
                         <button
                           className="button subtle"
@@ -865,7 +891,7 @@ function Landing({ onCreate, onJoin, onHelp }) {
 }
 function Entry({ type, onClose, enter, busy, connected, code = "" }) {
   const [name, setName] = useState(localStorage.getItem("sd-name") || ""),
-    [avatar, setAvatar] = useState(localStorage.getItem("sd-avatar") || "blob"),
+    [avatar, setAvatar] = useState(localStorage.getItem("sd-avatar") || ""),
     [roomCode, setCode] = useState(code),
     [spectator, setSpectator] = useState(false);
   return (
@@ -878,18 +904,19 @@ function Entry({ type, onClose, enter, busy, connected, code = "" }) {
       onClose={onClose}
     >
       <p className="muted">
-        Pick a little face and a name your friends will recognize.
+        Pick a little face and a name your friends will recognize. Skip the face
+        and we’ll give you one nobody else has.
       </p>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
           localStorage.setItem("sd-name", name);
-          localStorage.setItem("sd-avatar", avatar);
+          if (avatar) localStorage.setItem("sd-avatar", avatar);
           await enter({
             create: type === "create",
             code: roomCode.toUpperCase().trim(),
             name,
-            avatar,
+            avatar: avatar || undefined,
             spectator,
           });
         }}
@@ -1704,11 +1731,9 @@ function Game({ state: s, me, session, host, act, action, upload }) {
                 discovered
               </p>
             )}
-            <TextAction
-              label="Your private guess"
-              placeholder="Is that a very angry kettle?"
-              button="Guess"
-              onSubmit={(text) => action("guess", { text })}
+            <GuessBox
+              progress={s.progress}
+              onGuess={(text) => action("guess", { text })}
             />
           </>
         )}

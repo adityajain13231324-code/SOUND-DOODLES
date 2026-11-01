@@ -52,7 +52,7 @@ export class Room {
     this.recent = [];
     this.settings = {
       mode: "classic",
-      rounds: 2,
+      rounds: 1,
       chainLength: 0,
       difficulty: "mixed",
       performanceSeconds: 40,
@@ -63,7 +63,19 @@ export class Room {
     this.replay = 0;
     this.autoplay = false;
   }
-  add({ name, avatar = "blob", spectator = false }) {
+  // Honor a requested avatar only if nobody here has it, so friends never look identical.
+  pickAvatar(requested) {
+    const used = new Set(this.players.map((p) => p.avatar));
+    if (AVATARS.includes(requested) && !used.has(requested)) return requested;
+    const free = AVATARS.find((a) => !used.has(a));
+    return (
+      free ||
+      (AVATARS.includes(requested)
+        ? requested
+        : AVATARS[this.players.length % AVATARS.length])
+    );
+  }
+  add({ name, avatar, spectator = false }) {
     requireThat(this.players.length < 12, "This room is full.");
     requireThat(
       typeof name === "string" &&
@@ -75,7 +87,7 @@ export class Room {
       id: randomUUID(),
       token: randomUUID() + randomUUID(),
       name: name.trim(),
-      avatar: AVATARS.includes(avatar) ? avatar : "blob",
+      avatar: this.pickAvatar(avatar),
       spectator: this.phase !== "lobby" || spectator,
       connected: true,
       ready: false,

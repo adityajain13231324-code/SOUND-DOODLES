@@ -349,3 +349,11 @@ test("Gartic without awards goes straight to results", () => {
   while (f.room.phase === "chainReveal") f.send(f.room.host, "next");
   assert.equal(f.room.phase, "results");
 });
+test("players get distinct avatars; a taken choice falls back to a free one", () => {
+  const room = new Room("AVATAR", { now: () => 1 });
+  const first = room.add({ name: "A", avatar: "ghost" });
+  const second = room.add({ name: "B", avatar: "ghost" });
+  const third = room.add({ name: "C" });
+  assert.equal(first.avatar, "ghost");
+  assert.equal(new Set([first, second, third].map((p) => p.avatar)).size, 3);
+});

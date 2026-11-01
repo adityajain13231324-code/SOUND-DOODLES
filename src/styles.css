@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap");
 :root {
   color-scheme: dark;
   --bg: #13131b;
@@ -17,8 +16,8 @@
   --accent: var(--violet);
   --shadow: 0 18px 60px #0003;
   --radius: 20px;
-  --display: "Space Grotesk", sans-serif;
-  --body: "DM Sans", sans-serif;
+  --display: "Space Grotesk Variable", "Space Grotesk", sans-serif;
+  --body: "DM Sans Variable", "DM Sans", sans-serif;
 }
 :root[data-theme="paper"] {
   color-scheme: light;
@@ -37,7 +36,7 @@
   --on-accent: #fffdf7;
   --shadow: 5px 6px 0 #302d3015;
   --radius: 10px;
-  --display: "Fraunces", Georgia, serif;
+  --display: "Fraunces Variable", "Fraunces", Georgia, serif;
   --texture: radial-gradient(#302d3012 1px, transparent 1.5px) 0 0 / 22px 22px;
 }
 :root[data-theme="neon"] {
@@ -81,7 +80,7 @@
   --shadow: 0 16px 55px #13061333;
   --radius: 28px;
   --accent: #f4a582;
-  --display: "Bricolage Grotesque", sans-serif;
+  --display: "Bricolage Grotesque Variable", "Bricolage Grotesque", sans-serif;
   --texture: radial-gradient(120% 70% at 85% 0%, #e0795a26, transparent 60%);
 }
 * {
@@ -420,7 +419,7 @@ small,
   position: absolute;
   top: 18px;
   left: 25%;
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 0.18em;
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -588,7 +587,7 @@ small,
   width: 4px;
 }
 .sound-tape span {
-  font-size: 7px;
+  font-size: 12px;
   letter-spacing: 0.11em;
   color: var(--muted);
 }
@@ -634,7 +633,7 @@ small,
   margin-top: 10px;
 }
 .section-title .eyebrow {
-  font-size: 8px;
+  font-size: 12px;
 }
 .section-title > .text-button {
   color: var(--muted);
@@ -665,7 +664,7 @@ small,
   max-width: 65%;
 }
 .mode-tag {
-  font-size: 7px;
+  font-size: 12px;
   letter-spacing: 0.14em;
   color: var(--accent);
   font-weight: 700;
@@ -769,7 +768,7 @@ small,
   flex-wrap: wrap;
 }
 .more-modes > span {
-  font-size: 7px;
+  font-size: 12px;
   letter-spacing: 0.15em;
   color: var(--muted);
 }
@@ -1179,7 +1178,7 @@ select {
   padding: 4px 0 30px;
 }
 .lobby-heading .eyebrow {
-  font-size: 8px;
+  font-size: 12px;
 }
 .lobby-heading h1 {
   font-size: 42px;
@@ -1419,7 +1418,7 @@ select {
   background: var(--surface-2);
 }
 .prompt-choices span {
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   color: var(--muted);
 }
@@ -1689,7 +1688,7 @@ audio {
   min-width: 0;
 }
 .chain-entry .eyebrow {
-  font-size: 8px;
+  font-size: 12px;
 }
 .chain-entry h2 {
   font-size: 27px;
@@ -1718,7 +1717,7 @@ audio {
   border-radius: 15px;
 }
 .chain-comparison span {
-  font-size: 8px;
+  font-size: 12px;
   color: var(--muted);
   letter-spacing: 0.12em;
   display: block;
@@ -1936,7 +1935,7 @@ audio {
   right: 0;
   text-align: center;
   letter-spacing: 0.13em;
-  font-size: 8px;
+  font-size: 12px;
   color: var(--muted);
 }
 .playing.bounce .foley-actor {
@@ -2128,7 +2127,7 @@ audio {
   }
   footer {
     margin: 0 28px;
-    font-size: 8px;
+    font-size: 12px;
   }
 }
 @media (max-width: 760px) {
@@ -2288,7 +2287,7 @@ audio {
     padding: 20px 0 25px;
     flex-direction: column;
     gap: 15px;
-    font-size: 8px;
+    font-size: 12px;
   }
   .room-pill {
     font-size: 12px;
@@ -2318,10 +2317,15 @@ audio {
   }
   .player-row {
     flex-shrink: 0;
-    gap: 5px;
+    gap: 8px;
+    align-items: center;
   }
   .player-row > div > span {
-    display: none;
+    display: block;
+    font-size: 12px;
+    line-height: 1.2;
+    color: var(--muted);
+    white-space: nowrap;
   }
   .player-row strong {
     font-size: 12px;
@@ -2465,7 +2469,7 @@ audio {
     min-width: 36px;
   }
   .reactions > span {
-    font-size: 8px;
+    font-size: 12px;
   }
   .reactions > div {
     font-size: 19px;
@@ -2645,7 +2649,7 @@ audio {
     position: absolute;
     top: 8px;
     right: 10px;
-    font-size: 8px;
+    font-size: 12px;
     color: var(--muted);
   }
 }
