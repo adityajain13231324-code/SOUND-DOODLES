@@ -1,7 +1,7 @@
 # Sound Doodles
 
-A browser party game for 3–8 friends: you get a prompt, you make the sound, your friends try to work it out.
-Six modes: **Classic** and **Gartic Sounds** (flagship), plus Duo Orchestra, Sound Detective, Five-Second Foley and Blind Ranking.
+A browser party game for 2–8 friends: you get a prompt, you make the sound, your friends try to work it out.
+Six modes (Classic, Gartic Sounds, Foley and Ranking start from 2 players; Duo Orchestra and Sound Detective need 4): **Classic** and **Gartic Sounds** (flagship), plus Duo Orchestra, Sound Detective, Five-Second Foley and Blind Ranking.
 Four themes: Midnight Studio (default), Paper Playground, Neon Arcade, Sunset Lounge. No accounts needed.
 
 ## Run it
@@ -23,9 +23,9 @@ npm run build && npm start
 ## Test it
 
 ```bash
-npm test                 # 24 unit and socket tests
+npm test                 # 29 unit and socket tests
 npx playwright install chromium   # first time only (tests use the Chrome channel)
-npm run test:browser     # 8 browser tests: four sessions per mode, simulated microphones
+npm run test:browser     # 9 browser tests: four sessions per mode, simulated microphones
 node scripts/shots.mjs   # screenshots of every theme at desktop and phone sizes into shots/
 ```
 

@@ -777,7 +777,7 @@ function Landing({ onCreate, onJoin, onHelp }) {
           <div className="hero-meta">
             <span>
               <Users size={16} />
-              3–8 friends
+              2–8 friends
             </span>
             <span>
               <Mic size={16} />

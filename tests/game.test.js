@@ -55,7 +55,7 @@ test("matching normalizes, conservatively tolerates typos and accumulates compon
   assert.deepEqual(first.components, [0]);
   assert.ok(matchPrompt(robot, "hiccups", first.components).correct);
 });
-for (let n = 3; n <= 8; n++)
+for (let n = 2; n <= 8; n++)
   test(`Gartic routing: ${n} players, balanced, no self-handoff, stable ancestry`, () => {
     const ids = Array.from({ length: n }, (_, i) => `p${i}`),
       schedule = routing(ids, n);
@@ -356,4 +356,47 @@ test("players get distinct avatars; a taken choice falls back to a free one", ()
   const third = room.add({ name: "C" });
   assert.equal(first.avatar, "ghost");
   assert.equal(new Set([first, second, third].map((p) => p.avatar)).size, 3);
+});
+test("two players: Duo and Detective still need four, the other modes start", () => {
+  for (const mode of ["duo", "detective"])
+    assert.throws(() => fixture(mode, 2).room.start(), /4 players/);
+  for (const mode of ["classic", "gartic", "foley", "ranking"]) {
+    const f = fixture(mode, 2);
+    f.room.start();
+    assert.notEqual(f.room.phase, "lobby", mode);
+  }
+  assert.throws(() => fixture("classic", 1).room.start(), /2 players/);
+});
+test("two-player Classic: one performer, one guesser, full match", () => {
+  const f = fixture("classic", 2);
+  f.room.start();
+  while (f.room.phase !== "results") {
+    const performer = f.room.performerIds[0];
+    const [guesser] = f.room.ids.filter((id) => id !== performer);
+    f.send(performer, "pick", { promptId: f.room.choices[0].id });
+    f.expire();
+    assert.deepEqual(f.room.eligible, [guesser]);
+    f.send(guesser, "guess", { text: f.room.prompt.phrase });
+    assert.equal(f.room.phase, "roundReveal");
+    f.send(f.room.host, "next");
+  }
+  assert.ok(f.room.player(f.room.ids[0]).score > 0);
+});
+test("two-player Gartic: word to sound to word, each chain touched by both players", () => {
+  const f = fixture("gartic", 2);
+  f.room.start();
+  submitRecordings(f);
+  for (const id of f.room.ids)
+    f.send(id, "submit", { text: "A guess from the other side" });
+  f.expire();
+  assert.equal(f.room.phase, "chainReveal");
+  for (const chain of Object.values(f.room.chains)) {
+    assert.deepEqual(
+      chain.entries.map((e) => e.type),
+      ["text", "audio", "text"],
+    );
+    assert.notEqual(chain.entries[2].author, chain.entries[1].author);
+  }
+  while (f.room.phase === "chainReveal") f.send(f.room.host, "next");
+  assert.equal(f.room.phase, "results");
 });

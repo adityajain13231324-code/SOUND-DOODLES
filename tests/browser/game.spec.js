@@ -422,6 +422,46 @@ test("Gartic awards: friendly vote after the reveal, self-votes blocked, winners
     await g.close();
   }
 });
+test("two players can play Gartic Sounds to the end", async ({ browser }) => {
+  const g = await group(browser, 2);
+  try {
+    await expect(g.pages[0].getByText("2–8 players").first()).toBeVisible();
+    await configure(g, "gartic");
+    await recordAll(g);
+    await Promise.all(
+      g.pages.map(async (page, i) => {
+        await expect(page.locator("audio")).toBeVisible();
+        await page
+          .getByLabel("Your interpretation")
+          .fill(`Two player guess ${i}`);
+        await page.getByRole("button", { name: "Submit", exact: true }).click();
+      }),
+    );
+    await expire(g.room);
+    await expect.poll(() => g.room.phase).toBe("chainReveal");
+    while (g.room.phase === "chainReveal") {
+      const entries =
+        g.room.chains[g.room.ids[g.room.revealChain]].entries.length;
+      if (g.room.revealStep < entries - 1)
+        await g.pages[0]
+          .getByRole("button", { name: "Reveal next step", exact: true })
+          .click();
+      else
+        await g.pages[0]
+          .getByRole("button", {
+            name: g.room.revealChain === 1 ? "Finish the show" : "Next chain",
+            exact: true,
+          })
+          .click();
+    }
+    await expect(
+      g.pages[0].getByRole("heading", { name: "You made quite a story." }),
+    ).toBeVisible();
+    expect(g.errors).toEqual([]);
+  } finally {
+    await g.close();
+  }
+});
 for (const mode of ["duo", "detective", "foley", "ranking"])
   test(`${mode}: complete browser match to results`, async ({ browser }) => {
     const g = await group(browser);
