@@ -11,6 +11,8 @@ import { GuessBox } from "../../GuessBox.jsx";
 import { Awards, AwardsResult } from "../../Awards.jsx";
 import { LiveMeter } from "./LiveMeter.jsx";
 import { TextAction } from "../../ui/TextAction.jsx";
+import { FlipCard, Podium } from "../../ui/ceremony.jsx";
+import { Confetti, useShake } from "../../ui/fx.jsx";
 import { Voting } from "../Voting.jsx";
 import {
   ArrowRight,
@@ -29,6 +31,7 @@ export function Game({ state: s, me, session, host, act, action, upload }) {
   const performer = s.performerIds?.includes(s.you),
     person = (id) => s.players.find((p) => p.id === id);
   const [foleyPlay, setFoleyPlay] = useState(0);
+  useShake(phase === "results" ? s.phaseId : 0);
   const next = (
     <button className="button primary" onClick={() => act("next")}>
       Next
@@ -38,6 +41,7 @@ export function Game({ state: s, me, session, host, act, action, upload }) {
   if (phase === "results")
     return (
       <section className="results-stage">
+        <Confetti fixed count={90} origin="50% 28%" duration={3200} />
         <span className="eyebrow">THAT WAS BEAUTIFULLY RIDICULOUS</span>
         <div className="results-art">
           <Avatar kind="star" size={130} />
@@ -56,23 +60,7 @@ export function Game({ state: s, me, session, host, act, action, upload }) {
         {mode === "gartic" && s.awards && (
           <AwardsResult state={s} session={session} />
         )}
-        {mode !== "gartic" && (
-          <div className="scoreboard">
-            {[...s.players]
-              .filter((p) => !p.spectator)
-              .sort((a, b) => b.score - a.score)
-              .map((p, i, all) => (
-                <div key={p.id}>
-                  <b>{all.findIndex((x) => x.score === p.score) + 1}</b>
-                  <Avatar kind={p.avatar} size={44} />
-                  <strong>{p.name}</strong>
-                  <span>
-                    {p.score} <small>pts</small>
-                  </span>
-                </div>
-              ))}
-          </div>
-        )}
+        {mode !== "gartic" && <Podium players={s.players} />}
         {host ? (
           <button className="button primary large" onClick={() => act("again")}>
             <RotateCcw size={20} />
@@ -382,15 +370,19 @@ export function Game({ state: s, me, session, host, act, action, upload }) {
     return (
       <section className="game-stage">
         <span className="eyebrow">FIVE SECONDS TO FIND YOUR INNER WEIRDO</span>
-        <h1>
-          {mode === "detective"
-            ? s.outsider
-              ? "You’re the outsider."
-              : s.prompt
-            : performer
-              ? s.prompt
+        {performer && mode !== "detective" ? (
+          <FlipCard>
+            <h1>{s.prompt}</h1>
+          </FlipCard>
+        ) : (
+          <h1>
+            {mode === "detective"
+              ? s.outsider
+                ? "You’re the outsider."
+                : s.prompt
               : "Get ready to listen."}
-        </h1>
+          </h1>
+        )}
         <p>
           {mode === "detective"
             ? s.outsider
@@ -429,8 +421,13 @@ export function Game({ state: s, me, session, host, act, action, upload }) {
         </h1>
         <div className="performer-avatars">
           {s.performers.map((id) => (
-            <div key={id} className={id === s.you ? "self" : ""}>
-              <Avatar kind={person(id)?.avatar} size={110} />
+            <div key={id} className={id === s.you ? "self" : "perf"}>
+              <Avatar
+                kind={person(id)?.avatar}
+                size={110}
+                animated
+                reactive={id === s.you}
+              />
               <strong>{person(id)?.name}</strong>
             </div>
           ))}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Wave } from "../../components.jsx";
+import { EQ } from "../../ui/kit.jsx";
 import { createMeter, mic } from "../../audio.js";
 
 export function LiveMeter() {
@@ -23,5 +23,9 @@ export function LiveMeter() {
       root.removeProperty("--voice");
     };
   }, []);
-  return <Wave level={level} />;
+  return (
+    <div className="mic-stage" aria-label="Your microphone level">
+      <EQ level={level} count={32} />
+    </div>
+  );
 }

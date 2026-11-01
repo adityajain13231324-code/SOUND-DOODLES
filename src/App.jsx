@@ -9,6 +9,8 @@ import { StageBackground } from "./ui/StageBackground.jsx";
 import { ThemePicker } from "./ui/ThemePicker.jsx";
 import { ReconnectPill } from "./ui/overlays.jsx";
 import { Cast } from "./ui/Cast.jsx";
+import { TimerRing } from "./ui/kit.jsx";
+import { CountdownOverlay } from "./ui/ceremony.jsx";
 import { sfx } from "./ui/sfx.js";
 import { Landing } from "./screens/Landing.jsx";
 import { Entry } from "./screens/Entry.jsx";
@@ -34,6 +36,27 @@ import {
 import { io } from "socket.io-client";
 
 const socket = io({ autoConnect: false });
+function phaseLabel(state) {
+  const onMic = state.performers?.includes(state.you);
+  const labels = {
+    choose: "Pick a sound",
+    prepare: "Get ready",
+    perform: onMic ? "Perform" : "Guess",
+    record: "Record",
+    interpret: "Write",
+    seed: "Write",
+    handoff: "Passing it on",
+    listening: "Listen",
+    vote: "Vote",
+    outsider: "The outsider's guess",
+    roundReveal: "Reveal",
+    chainReveal: "The big reveal",
+    awards: "Awards",
+    results: "Results",
+  };
+  return labels[state.phase] || "Play";
+}
+
 export function App() {
   const [state, setState] = useState(null),
     [session, setSession] = useState(() =>
@@ -339,6 +362,7 @@ export function App() {
                     <span className="eyebrow">
                       {MODES[state.settings.mode].name}
                     </span>
+                    <span className="phase-chip">{phaseLabel(state)}</span>
                     <span>
                       {["chainReveal", "awards", "results"].includes(
                         state.phase,
@@ -349,10 +373,11 @@ export function App() {
                           : `Round ${Math.min(state.round + 1, state.totalRounds)} of ${state.totalRounds}`}
                     </span>
                     {state.deadline && (
-                      <span className={`timer ${seconds < 6 ? "urgent" : ""}`}>
-                        <Clock size={16} />
-                        {seconds}s
-                      </span>
+                      <TimerRing
+                        seconds={seconds}
+                        total={phaseLength.current.total}
+                        size={56}
+                      />
                     )}
                   </div>
                   {state.deadline && (
@@ -364,6 +389,9 @@ export function App() {
                         }}
                       />
                     </div>
+                  )}
+                  {state.phase === "prepare" && (
+                    <CountdownOverlay seconds={seconds} />
                   )}
                   <Game
                     key={`${state.phaseId}-${state.phase}`}
@@ -478,7 +506,7 @@ export function App() {
         />
       )}
       {modal === "audio" && (
-        <Modal title="Make room for the sound." onClose={() => setModal(null)}>
+        <Modal title="Sound & motion" onClose={() => setModal(null)}>
           <AudioSettings />
           <button className="button subtle" onClick={() => setModal("mic")}>
             <Mic size={17} />

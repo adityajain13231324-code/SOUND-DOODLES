@@ -539,7 +539,7 @@ main {
 .cast-chip.offline {
   opacity: 0.45;
 }
-.cast .leave {
+.cast .cast-leave {
   flex: none;
 }
 .players-rail,

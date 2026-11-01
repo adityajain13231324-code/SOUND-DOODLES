@@ -876,3 +876,18 @@ h3 {
     translate: -2px 0;
   }
 }
+
+/* Paper's mint and coral are dark enough for text, so their fills take light text. */
+[data-theme="paper"] .btn-mint,
+[data-theme="paper"] .button.mint,
+[data-theme="paper"] .btn-danger,
+[data-theme="paper"] .button.danger {
+  --btn-fg: #fffdf7;
+}
+[data-theme="paper"] .ready-pop,
+[data-theme="paper"] .cast-check {
+  color: #fffdf7;
+}
+[data-theme="paper"] .badge-mint {
+  color: #fffdf7;
+}

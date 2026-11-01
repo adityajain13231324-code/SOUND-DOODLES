@@ -5,7 +5,7 @@ import { mkdir } from "node:fs/promises";
 
 const port = 3411;
 const base = `http://localhost:${port}`;
-const out = "shots/play";
+const out = `shots/play-${process.env.THEME || "midnight"}`;
 await mkdir(out, { recursive: true });
 const app = await createApp({ production: true, port });
 const browser = await chromium.launch({
@@ -28,6 +28,7 @@ async function makeGroup() {
       hasTouch: true,
       permissions: ["microphone"],
     });
+    await ctx.addInitScript((t) => localStorage.setItem("sd-theme", t), process.env.THEME || "midnight");
     const page = await ctx.newPage();
     await page.goto(base);
     await page

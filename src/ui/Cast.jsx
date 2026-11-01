@@ -55,7 +55,7 @@ export function Cast({ state, onLeave }) {
       </div>
       <button
         type="button"
-        className="btn btn-ghost btn-sm leave"
+        className="btn btn-ghost btn-sm cast-leave"
         onClick={onLeave}
       >
         <LogOut size={15} />
