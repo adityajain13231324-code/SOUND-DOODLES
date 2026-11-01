@@ -3,6 +3,12 @@ import { prompts, matchPrompt } from "./prompts.js";
 import { MODES, AVATARS } from "../shared/modes.js";
 
 export class GameError extends Error {}
+export const AWARD_CATEGORIES = [
+  { key: "funniest", label: "Funniest transformation" },
+  { key: "bestSound", label: "Best sound performance" },
+  { key: "unexpected", label: "Most unexpected interpretation" },
+  { key: "accurate", label: "Most surprisingly accurate chain" },
+];
 const requireThat = (condition, message) => {
   if (!condition) throw new GameError(message);
 };
@@ -17,7 +23,9 @@ export function shuffle(values) {
 export function routing(ids, rounds) {
   const order = shuffle(ids);
   return Array.from({ length: rounds }, (_, round) =>
-    Object.fromEntries(order.map((owner, i) => [order[(i + round) % order.length], owner])),
+    Object.fromEntries(
+      order.map((owner, i) => [order[(i + round) % order.length], owner]),
+    ),
   );
 }
 export function rankingScores(entries, ballots) {
@@ -49,6 +57,7 @@ export class Room {
       difficulty: "mixed",
       performanceSeconds: 40,
       customPrompts: false,
+      awards: false,
     };
     this.reactions = [];
     this.replay = 0;
@@ -57,7 +66,9 @@ export class Room {
   add({ name, avatar = "blob", spectator = false }) {
     requireThat(this.players.length < 12, "This room is full.");
     requireThat(
-      typeof name === "string" && name.trim().length >= 1 && name.trim().length <= 20,
+      typeof name === "string" &&
+        name.trim().length >= 1 &&
+        name.trim().length <= 20,
       "Use a nickname from 1 to 20 characters.",
     );
     const p = {
@@ -132,7 +143,9 @@ export class Room {
       "Everyone needs to be ready.",
     );
     requireThat(
-      mode === "classic" ? active.filter((p) => p.mic).length >= 1 : active.every((p) => p.mic),
+      mode === "classic"
+        ? active.filter((p) => p.mic).length >= 1
+        : active.every((p) => p.mic),
       "Check your microphones first, or choose spectator. Classic also allows guessers without a microphone.",
     );
     this.ids = shuffle(active.map((p) => p.id));
@@ -140,6 +153,8 @@ export class Room {
     this.round = 0;
     this.audio.clear();
     this.autoplay = false;
+    this.awardBallots = {};
+    this.awards = null;
     if (mode === "gartic") {
       this.chainRounds = this.settings.chainLength
         ? Math.min(this.ids.length, this.settings.chainLength)
@@ -151,7 +166,9 @@ export class Room {
           {
             id: randomUUID(),
             owner: id,
-            entries: [{ type: "text", text: this.draw().phrase, author: id, round: -1 }],
+            entries: [
+              { type: "text", text: this.draw().phrase, author: id, round: -1 },
+            ],
           },
         ]),
       );
@@ -162,7 +179,8 @@ export class Room {
     } else {
       this.totalRounds =
         mode === "classic"
-          ? this.ids.filter((id) => this.player(id).mic).length * this.settings.rounds
+          ? this.ids.filter((id) => this.player(id).mic).length *
+            this.settings.rounds
           : this.settings.rounds;
       this.beginRound();
     }
@@ -225,18 +243,23 @@ export class Room {
     const chain = this.chains[owner];
     if (!chain) return null;
     const last = chain.entries.at(-1);
-    if (last.type === "missing") return { type: "text", text: "A squeaky door", replacement: true };
+    if (last.type === "missing")
+      return { type: "text", text: "A squeaky door", replacement: true };
     return { type: last.type, text: last.text, audioId: last.audioId };
   }
   checkPhase(data) {
-    requireThat(data.phaseId === this.phaseId, "That round has moved on. Try the current action.");
+    requireThat(
+      data.phaseId === this.phaseId,
+      "That round has moved on. Try the current action.",
+    );
   }
   dispatch(id, event, data = {}) {
     requireThat(data && typeof data === "object", "Invalid action.");
     const p = this.player(id);
     requireThat(p?.connected, "Reconnect to the room first.");
     this.touched = this.now();
-    const host = () => requireThat(this.host === id, "Only the host can do that.");
+    const host = () =>
+      requireThat(this.host === id, "Only the host can do that.");
     const participant = () =>
       requireThat(
         this.ids?.includes(id),
@@ -283,6 +306,7 @@ export class Room {
         chainLength: s.chainLength,
         performanceSeconds: s.performanceSeconds,
         customPrompts: !!s.customPrompts,
+        awards: !!s.awards,
       };
       this.players.forEach((p) => (p.ready = false));
       return;
@@ -305,10 +329,21 @@ export class Room {
       return;
     }
     if (event === "reaction") {
-      requireThat(["👏", "😂", "✨", "🤯"].includes(data.emoji), "Choose a reaction.");
-      requireThat(this.now() - (p.lastReaction || 0) >= 2000, "Give that reaction a moment.");
+      requireThat(
+        ["👏", "😂", "✨", "🤯"].includes(data.emoji),
+        "Choose a reaction.",
+      );
+      requireThat(
+        this.now() - (p.lastReaction || 0) >= 2000,
+        "Give that reaction a moment.",
+      );
       p.lastReaction = this.now();
-      this.reactions.push({ id: randomUUID(), emoji: data.emoji, name: p.name, at: this.now() });
+      this.reactions.push({
+        id: randomUUID(),
+        emoji: data.emoji,
+        name: p.name,
+        at: this.now(),
+      });
       this.reactions = this.reactions.slice(-5);
       return;
     }
@@ -325,7 +360,9 @@ export class Room {
     }
     if (event === "skipPrompt") {
       requireThat(
-        this.phase === "choose" && this.performerIds.includes(id) && this.skips < 1,
+        this.phase === "choose" &&
+          this.performerIds.includes(id) &&
+          this.skips < 1,
         "One shuffle is allowed per turn.",
       );
       this.skips++;
@@ -341,7 +378,9 @@ export class Room {
         "You cannot guess right now.",
       );
       requireThat(
-        typeof data.text === "string" && data.text.trim().length > 0 && data.text.length <= 120,
+        typeof data.text === "string" &&
+          data.text.trim().length > 0 &&
+          data.text.length <= 120,
         "Keep guesses between 1 and 120 characters.",
       );
       requireThat(
@@ -350,26 +389,34 @@ export class Room {
       );
       p.lastGuess = this.now();
       if (this.solved[id]) return;
-      const result = matchPrompt(this.prompt, data.text, this.progress[id]?.components);
+      const result = matchPrompt(
+        this.prompt,
+        data.text,
+        this.progress[id]?.components,
+      );
       this.progress[id] = result;
       if (result.correct) {
         const remaining = Math.max(
           0,
-          (this.deadline - this.now()) / (this.settings.performanceSeconds * 1000 * this.scale),
+          (this.deadline - this.now()) /
+            (this.settings.performanceSeconds * 1000 * this.scale),
         );
         const points = 100 + Math.round(100 * remaining);
         this.solved[id] = points;
         p.score += points;
       }
-      if (this.eligible.every((id) => this.solved[id])) this.finishPerformance();
+      if (this.eligible.every((id) => this.solved[id]))
+        this.finishPerformance();
       return;
     }
     if (event === "pass") {
       participant();
       if (
         ["choose", "prepare", "perform"].includes(this.phase) &&
-        ((this.settings.mode === "detective" && this.performers().includes(id)) ||
-          (["classic", "duo"].includes(this.settings.mode) && this.performerIds.includes(id)))
+        ((this.settings.mode === "detective" &&
+          this.performers().includes(id)) ||
+          (["classic", "duo"].includes(this.settings.mode) &&
+            this.performerIds.includes(id)))
       ) {
         if (this.settings.mode === "detective") this.advance();
         else {
@@ -383,13 +430,20 @@ export class Room {
         "You cannot pass at this step.",
       );
       if (!this.submissions[id])
-        this.submissions[id] = { type: "missing", reason: "Passed", author: id };
+        this.submissions[id] = {
+          type: "missing",
+          reason: "Passed",
+          author: id,
+        };
       this.maybeSubmitted();
       return;
     }
     if (event === "submit") {
       participant();
-      requireThat(["seed", "record", "interpret"].includes(this.phase), "Submissions are closed.");
+      requireThat(
+        ["seed", "record", "interpret"].includes(this.phase),
+        "Submissions are closed.",
+      );
       if (this.submissions[id]) return;
       if (this.phase === "record") {
         const a = this.audio.get(data.audioId);
@@ -397,15 +451,59 @@ export class Room {
           a && a.owner === id && a.phaseId === this.phaseId,
           "Record and upload your sound first.",
         );
-        this.submissions[id] = { type: "audio", audioId: data.audioId, author: id };
+        this.submissions[id] = {
+          type: "audio",
+          audioId: data.audioId,
+          author: id,
+        };
       } else {
         requireThat(
-          typeof data.text === "string" && data.text.trim().length > 0 && data.text.length <= 100,
+          typeof data.text === "string" &&
+            data.text.trim().length > 0 &&
+            data.text.length <= 100,
           "Use 1 to 100 characters.",
         );
-        this.submissions[id] = { type: "text", text: data.text.trim(), author: id };
+        this.submissions[id] = {
+          type: "text",
+          text: data.text.trim(),
+          author: id,
+        };
       }
       this.maybeSubmitted();
+      return;
+    }
+    if (event === "award") {
+      participant();
+      requireThat(this.phase === "awards", "Awards voting is closed.");
+      if (this.awardBallots[id]) return;
+      const picks = data.picks || {};
+      const entryRefs = {};
+      for (const chain of Object.values(this.chains))
+        chain.entries.forEach((e, i) => {
+          if (e.type === "audio") entryRefs[`${chain.id}:${i}`] = e;
+        });
+      const clean = {};
+      for (const key of AWARD_CATEGORIES.map((c) => c.key)) {
+        const pick = picks[key];
+        if (pick === undefined || pick === null) continue;
+        if (key === "bestSound") {
+          requireThat(entryRefs[pick], "Choose a real recording.");
+          requireThat(
+            entryRefs[pick].author !== id,
+            "You cannot vote for your own sound.",
+          );
+        } else {
+          const chain = Object.values(this.chains).find((c) => c.id === pick);
+          requireThat(chain, "Choose a real chain.");
+          requireThat(
+            chain.owner !== id,
+            "You cannot vote for your own chain.",
+          );
+        }
+        clean[key] = pick;
+      }
+      this.awardBallots[id] = clean;
+      if (this.ids.every((pid) => this.awardBallots[pid])) this.finishAwards();
       return;
     }
     if (event === "vote") {
@@ -414,16 +512,20 @@ export class Room {
       if (this.ballots[id]) return;
       if (this.settings.mode === "detective") {
         requireThat(
-          data.target === null || (this.ids.includes(data.target) && data.target !== id),
+          data.target === null ||
+            (this.ids.includes(data.target) && data.target !== id),
           "Choose someone else, or abstain.",
         );
         this.ballots[id] = { target: data.target };
       } else {
         requireThat(
-          Array.isArray(data.ranking) && new Set(data.ranking).size === data.ranking.length,
+          Array.isArray(data.ranking) &&
+            new Set(data.ranking).size === data.ranking.length,
           "Choose distinct recordings.",
         );
-        const allowed = this.entries.filter((e) => e.author !== id).map((e) => e.id);
+        const allowed = this.entries
+          .filter((e) => e.author !== id)
+          .map((e) => e.id);
         requireThat(
           data.ranking.every((x) => allowed.includes(x)),
           "You cannot vote for your own sound.",
@@ -452,7 +554,12 @@ export class Room {
       this.advance();
       return;
     }
-    if (event === "next" || event === "nextChain" || event === "replay" || event === "autoplay") {
+    if (
+      event === "next" ||
+      event === "nextChain" ||
+      event === "replay" ||
+      event === "autoplay"
+    ) {
       host();
       requireThat(
         ["roundReveal", "chainReveal", "listening"].includes(this.phase),
@@ -470,7 +577,8 @@ export class Room {
       if (event === "nextChain") {
         requireThat(
           this.phase === "chainReveal" &&
-            this.revealStep >= this.chains[this.ids[this.revealChain]].entries.length - 1,
+            this.revealStep >=
+              this.chains[this.ids[this.revealChain]].entries.length - 1,
           "Reveal every step first.",
         );
         this.advanceChain();
@@ -489,14 +597,20 @@ export class Room {
   }
   finishPerformance() {
     const solved = Object.keys(this.solved).length;
-    const bonus = Math.round((200 * solved) / Math.max(1, this.eligible.length));
+    const bonus = Math.round(
+      (200 * solved) / Math.max(1, this.eligible.length),
+    );
     this.performerIds.forEach((id) => (this.player(id).score += bonus));
     this.answer = this.prompt.phrase;
     this.setPhase("roundReveal");
   }
   finishTask(phase = this.phase) {
     for (const id of this.ids)
-      this.submissions[id] ??= { type: "missing", reason: "No submission", author: id };
+      this.submissions[id] ??= {
+        type: "missing",
+        reason: "No submission",
+        author: id,
+      };
     if (phase === "seed") {
       for (const id of this.ids)
         if (this.submissions[id].type === "text")
@@ -507,7 +621,10 @@ export class Room {
     if (this.settings.mode === "gartic") {
       for (const id of this.ids) {
         const chain = this.chains[this.schedule[this.contributionRound][id]];
-        chain.entries.push({ ...this.submissions[id], round: this.contributionRound });
+        chain.entries.push({
+          ...this.submissions[id],
+          round: this.contributionRound,
+        });
       }
       this.contributionRound++;
       if (this.contributionRound >= this.chainRounds) {
@@ -516,9 +633,13 @@ export class Room {
         this.setPhase("chainReveal");
       } else this.beginTask();
     } else {
-      this.entries = shuffle(Object.values(this.submissions).filter((e) => e.type === "audio")).map(
-        (e, i) => ({ ...e, id: randomUUID(), label: `Sound ${String.fromCharCode(65 + i)}` }),
-      );
+      this.entries = shuffle(
+        Object.values(this.submissions).filter((e) => e.type === "audio"),
+      ).map((e, i) => ({
+        ...e,
+        id: randomUUID(),
+        label: `Sound ${String.fromCharCode(65 + i)}`,
+      }));
       this.listenIndex = 0;
       if (this.entries.length) this.setPhase("listening");
       else {
@@ -527,11 +648,37 @@ export class Room {
       }
     }
   }
+  finishAwards() {
+    const tallies = Object.fromEntries(
+      AWARD_CATEGORIES.map((c) => [c.key, {}]),
+    );
+    for (const ballot of Object.values(this.awardBallots || {}))
+      for (const [key, pick] of Object.entries(ballot))
+        tallies[key][pick] = (tallies[key][pick] || 0) + 1;
+    this.awards = AWARD_CATEGORIES.map(({ key, label }) => {
+      const entries = Object.entries(tallies[key]);
+      const top = Math.max(0, ...entries.map(([, n]) => n));
+      return {
+        key,
+        label,
+        votes: top,
+        winners: top
+          ? entries.filter(([, n]) => n === top).map(([pick]) => pick)
+          : [],
+      };
+    });
+    this.setPhase("results");
+  }
   advanceChain() {
     this.revealChain++;
     this.revealStep = 0;
-    if (this.revealChain >= this.ids.length) this.setPhase("results");
-    else {
+    if (this.revealChain >= this.ids.length) {
+      if (this.settings.awards && this.settings.mode === "gartic") {
+        this.awardBallots = {};
+        this.awards = null;
+        this.setPhase("awards", 60);
+      } else this.setPhase("results");
+    } else {
       this.setPhase("chainReveal");
       if (this.autoplay) this.deadline = this.now() + 12000 * this.scale;
     }
@@ -542,13 +689,20 @@ export class Room {
       this.finishTask(this.pendingPhase);
       return;
     }
+    if (this.phase === "awards") {
+      this.finishAwards();
+      return;
+    }
     if (this.phase === "choose") {
       this.prompt = this.choices[0];
       this.setPhase("prepare", 5);
       return;
     }
     if (this.phase === "prepare") {
-      this.setPhase("perform", mode === "detective" ? 10 : this.settings.performanceSeconds);
+      this.setPhase(
+        "perform",
+        mode === "detective" ? 10 : this.settings.performanceSeconds,
+      );
       return;
     }
     if (this.phase === "perform") {
@@ -575,28 +729,40 @@ export class Room {
     if (this.phase === "vote") {
       if (mode === "detective") {
         const counts = Object.fromEntries(this.ids.map((id) => [id, 0]));
-        for (const b of Object.values(this.ballots)) if (b.target) counts[b.target]++;
+        for (const b of Object.values(this.ballots))
+          if (b.target) counts[b.target]++;
         const max = Math.max(...Object.values(counts));
         const leaders = this.ids.filter((id) => counts[id] === max);
-        this.caught = max > 0 && leaders.length === 1 && leaders[0] === this.outsider;
-        this.voteResult = { counts, caught: this.caught, tie: leaders.length > 1 };
+        this.caught =
+          max > 0 && leaders.length === 1 && leaders[0] === this.outsider;
+        this.voteResult = {
+          counts,
+          caught: this.caught,
+          tie: leaders.length > 1,
+        };
         this.setPhase("outsider", 20);
       } else {
         const totals = rankingScores(this.entries, this.ballots);
         this.voteResult = this.entries
           .map((e) => ({ ...e, points: Math.round(totals[e.id] * 100) }))
           .sort((a, b) => b.points - a.points);
-        this.voteResult.forEach((e) => (this.player(e.author).score += e.points));
+        this.voteResult.forEach(
+          (e) => (this.player(e.author).score += e.points),
+        );
         this.setPhase("roundReveal");
       }
       return;
     }
     if (this.phase === "outsider") {
-      const escaped = matchPrompt(this.prompt, this.outsiderGuess || "").correct;
+      const escaped = matchPrompt(
+        this.prompt,
+        this.outsiderGuess || "",
+      ).correct;
       this.ids.forEach((id) => {
         if (id === this.outsider) {
           if (!this.caught || escaped) this.player(id).score += 200;
-        } else if (this.ballots[id]?.target === this.outsider) this.player(id).score += 100;
+        } else if (this.ballots[id]?.target === this.outsider)
+          this.player(id).score += 100;
       });
       this.voteResult = {
         ...this.voteResult,
@@ -667,7 +833,14 @@ export class Room {
     for (const [key, a] of this.audio)
       if (a.owner === id && a.phaseId === phaseId) this.audio.delete(key);
     const key = randomUUID();
-    this.audio.set(key, { owner: id, phaseId, buffer, mime, created: this.now(), duration });
+    this.audio.set(key, {
+      owner: id,
+      phaseId,
+      buffer,
+      mime,
+      created: this.now(),
+      duration,
+    });
     return key;
   }
   canHear(id, audioId) {
@@ -675,7 +848,16 @@ export class Room {
     const a = this.audio.get(audioId);
     if (!a) return false;
     if (a.owner === id) return true;
-    if (this.phase === "interpret" && this.task(id)?.audioId === audioId) return true;
+    if (this.phase === "interpret" && this.task(id)?.audioId === audioId)
+      return true;
+    if (
+      ["awards", "results"].includes(this.phase) &&
+      this.settings.mode === "gartic" &&
+      this.chains
+    )
+      return Object.values(this.chains).some((c) =>
+        c.entries.some((e) => e.audioId === audioId),
+      );
     if (this.phase === "chainReveal")
       return this.chains[this.ids[this.revealChain]].entries
         .slice(0, this.revealStep + 1)
@@ -687,7 +869,8 @@ export class Room {
       return this.entries?.some(
         (e) =>
           e.audioId === audioId &&
-          (this.phase !== "listening" || this.entries.indexOf(e) <= this.listenIndex),
+          (this.phase !== "listening" ||
+            this.entries.indexOf(e) <= this.listenIndex),
       );
     return false;
   }
@@ -732,10 +915,17 @@ export class Room {
       v.performerIds = this.performerIds;
       v.progress = this.progress?.[id];
       if (this.performerIds?.includes(id) && this.phase === "choose") {
-        v.choices = this.choices.map(({ id, phrase, difficulty }) => ({ id, phrase, difficulty }));
+        v.choices = this.choices.map(({ id, phrase, difficulty }) => ({
+          id,
+          phrase,
+          difficulty,
+        }));
         v.skips = this.skips;
       }
-      if (this.performerIds?.includes(id) && ["prepare", "perform"].includes(this.phase))
+      if (
+        this.performerIds?.includes(id) &&
+        ["prepare", "perform"].includes(this.phase)
+      )
         v.prompt =
           mode === "duo"
             ? this.prompt.components[this.performerIds.indexOf(id)].join(" / ")
@@ -743,7 +933,10 @@ export class Room {
       if (this.phase === "perform")
         v.hint =
           this.prompt.hints[
-            Math.min(1, Math.floor((this.now() - this.started) / (20000 * this.scale)))
+            Math.min(
+              1,
+              Math.floor((this.now() - this.started) / (20000 * this.scale)),
+            )
           ];
       if (this.phase === "roundReveal") {
         v.answer = this.answer;
@@ -754,7 +947,27 @@ export class Room {
       v.contributionRound = this.contributionRound;
       v.chainRounds = this.chainRounds;
       if (["record", "interpret"].includes(this.phase)) v.task = this.task(id);
-      if (this.phase === "seed" && this.ids.includes(id)) v.seed = this.chains[id].entries[0].text;
+      if (this.phase === "seed" && this.ids.includes(id))
+        v.seed = this.chains[id].entries[0].text;
+      if (["awards", "results"].includes(this.phase) && this.chains) {
+        v.awardChains = Object.values(this.chains).map((c) => ({
+          id: c.id,
+          owner: c.owner,
+          own: c.owner === id,
+          entries: c.entries.map((e, i) => ({
+            ref: `${c.id}:${i}`,
+            type: e.type,
+            text: e.type === "text" ? e.text : null,
+            audioId: e.type === "audio" ? e.audioId : null,
+            author: e.author,
+            own: e.author === id,
+            missing: e.type === "missing",
+          })),
+        }));
+        v.awardsEnabled = !!this.settings.awards;
+        v.awardsVoted = !!this.awardBallots?.[id];
+        if (this.phase === "results") v.awards = this.awards;
+      }
       if (this.phase === "chainReveal") {
         const chain = this.chains[this.ids[this.revealChain]];
         v.chain = {
@@ -768,7 +981,10 @@ export class Room {
       }
     }
     if (mode === "detective") {
-      if (this.ids.includes(id) && ["prepare", "perform", "vote"].includes(this.phase)) {
+      if (
+        this.ids.includes(id) &&
+        ["prepare", "perform", "vote"].includes(this.phase)
+      ) {
         v.outsider = id === this.outsider;
         v.prompt = v.outsider ? null : this.prompt.phrase;
       }
@@ -785,11 +1001,18 @@ export class Room {
     }
     if (["foley", "ranking"].includes(mode)) {
       if (mode === "foley") v.animation = this.animation;
-      if (mode === "ranking" && this.ids.includes(id) && this.phase === "record")
+      if (
+        mode === "ranking" &&
+        this.ids.includes(id) &&
+        this.phase === "record"
+      )
         v.prompt = this.prompt.phrase;
       if (["listening", "vote"].includes(this.phase))
         v.entries = this.entries
-          .slice(0, this.phase === "listening" ? this.listenIndex + 1 : undefined)
+          .slice(
+            0,
+            this.phase === "listening" ? this.listenIndex + 1 : undefined,
+          )
           .map(({ id: entryId, audioId, label, author }) => ({
             id: entryId,
             audioId,

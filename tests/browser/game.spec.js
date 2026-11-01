@@ -35,12 +35,22 @@ async function group(browser, count = 4) {
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(base);
     await page
-      .getByRole("button", { name: i ? "Join a room" : "Create a room", exact: true })
+      .getByRole("button", {
+        name: i ? "Join a room" : "Create a room",
+        exact: true,
+      })
       .click();
     await page.getByLabel("Your nickname").fill(`Friend ${i + 1}`);
     if (i)
-      await page.getByLabel("Room code").fill(new URL(pages[0].url()).searchParams.get("room"));
-    await page.getByRole("button", { name: i ? "Join room" : "Create room", exact: true }).click();
+      await page
+        .getByLabel("Room code")
+        .fill(new URL(pages[0].url()).searchParams.get("room"));
+    await page
+      .getByRole("button", {
+        name: i ? "Join room" : "Create room",
+        exact: true,
+      })
+      .click();
     await expect(page.getByText("Tonight’s game")).toBeVisible();
   }
   const code = new URL(pages[0].url()).searchParams.get("room"),
@@ -48,11 +58,19 @@ async function group(browser, count = 4) {
   await Promise.all(
     pages.map(async (page) => {
       await page.getByRole("button", { name: "A quick mic check?" }).click();
-      await page.getByRole("button", { name: "Test microphone", exact: true }).click();
-      await expect(page.getByRole("button", { name: "Stop recording", exact: true })).toBeVisible();
+      await page
+        .getByRole("button", { name: "Test microphone", exact: true })
+        .click();
+      await expect(
+        page.getByRole("button", { name: "Stop recording", exact: true }),
+      ).toBeVisible();
       await page.waitForTimeout(350);
-      await page.getByRole("button", { name: "Stop recording", exact: true }).click();
-      await expect(page.getByRole("button", { name: "Record again", exact: true })).toBeVisible();
+      await page
+        .getByRole("button", { name: "Stop recording", exact: true })
+        .click();
+      await expect(
+        page.getByRole("button", { name: "Record again", exact: true }),
+      ).toBeVisible();
       await page.getByRole("button", { name: "Done", exact: true }).click();
     }),
   );
@@ -66,11 +84,13 @@ async function group(browser, count = 4) {
     },
   };
 }
-async function configure(g, mode) {
+async function configure(g, mode, extra) {
   const host = g.pages[0];
   console.log("configure", mode);
   if (!["classic", "gartic"].includes(mode))
-    await host.getByRole("button", { name: "Four more ways to make a scene" }).click();
+    await host
+      .getByRole("button", { name: "Four more ways to make a scene" })
+      .click();
   const names = {
     classic: "Classic",
     gartic: "Gartic Sounds",
@@ -87,12 +107,17 @@ async function configure(g, mode) {
   await host.getByRole("button", { name: "Room settings" }).click();
   console.log("settings open");
   await host
-    .getByLabel(mode === "classic" ? "Turns per performer" : "Rounds", { exact: true })
+    .getByLabel(mode === "classic" ? "Turns per performer" : "Rounds", {
+      exact: true,
+    })
     .selectOption("1");
   await expect.poll(() => g.room.settings.rounds).toBe(1);
+  if (extra) await extra(host);
   console.log("rounds set");
   await Promise.all(
-    g.pages.map((p) => p.getByRole("button", { name: "Ready up", exact: true }).click()),
+    g.pages.map((p) =>
+      p.getByRole("button", { name: "Ready up", exact: true }).click(),
+    ),
   );
   console.log(
     "ready",
@@ -104,7 +129,9 @@ async function configure(g, mode) {
 }
 async function expire(room) {
   room.deadline = Date.now() - 1;
-  await expect.poll(() => room.deadline === null || room.deadline > Date.now()).toBeTruthy();
+  await expect
+    .poll(() => room.deadline === null || room.deadline > Date.now())
+    .toBeTruthy();
 }
 function pageFor(g, id) {
   return g.pages[g.room.players.findIndex((p) => p.id === id)];
@@ -112,49 +139,81 @@ function pageFor(g, id) {
 async function recordAll(g) {
   await Promise.all(
     g.pages.map(async (page) => {
-      await page.getByRole("button", { name: "Start recording", exact: true }).click();
-      await expect(page.getByRole("button", { name: "Stop recording", exact: true })).toBeVisible();
+      await page
+        .getByRole("button", { name: "Start recording", exact: true })
+        .click();
+      await expect(
+        page.getByRole("button", { name: "Stop recording", exact: true }),
+      ).toBeVisible();
       await page.waitForTimeout(650);
-      await page.getByRole("button", { name: "Stop recording", exact: true }).click();
-      await page.getByRole("button", { name: "Submit this sound", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Stop recording", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Submit this sound", exact: true })
+        .click();
     }),
   );
   await expect.poll(() => g.room.phase).toBe("handoff");
   await expire(g.room);
 }
 
-test("landing, four persistent themes, mobile layout and keyboard entry", async ({ page }) => {
+test("landing, four persistent themes, mobile layout and keyboard entry", async ({
+  page,
+}) => {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(base);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Make some");
-  await page.screenshot({ path: "../../work/landing-desktop.png", fullPage: true });
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(
+    "Make some",
+  );
+  await page.screenshot({
+    path: "../../work/landing-desktop.png",
+    fullPage: true,
+  });
   for (const [key, name] of [
     ["paper", "Paper Playground"],
     ["neon", "Neon Arcade"],
     ["sunset", "Sunset Lounge"],
     ["midnight", "Midnight Studio"],
   ]) {
-    await page.getByRole("button", { name: "Change theme", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Change theme", exact: true })
+      .click();
     await page.getByRole("button", { name: new RegExp(name) }).click();
     await page.getByRole("button", { name: "Close", exact: true }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", key);
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-theme", key);
-    await page.screenshot({ path: `../../work/theme-${key}.png`, fullPage: true });
+    await page.screenshot({
+      path: `../../work/theme-${key}.png`,
+      fullPage: true,
+    });
   }
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: "../../work/landing-mobile.png", fullPage: true });
+  await page.screenshot({
+    path: "../../work/landing-mobile.png",
+    fullPage: true,
+  });
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
   ).toBeTruthy();
-  await page.getByRole("button", { name: "Create a room", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Create a room", exact: true })
+    .click();
   await page.getByLabel("Your nickname").fill("Mobile friend");
   await page.keyboard.press("Enter");
   await expect(page.getByText("Tonight’s game")).toBeVisible();
-  await page.screenshot({ path: "../../work/lobby-mobile.png", fullPage: true });
+  await page.screenshot({
+    path: "../../work/lobby-mobile.png",
+    fullPage: true,
+  });
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
   ).toBeTruthy();
   expect(errors).toEqual([]);
 });
@@ -163,7 +222,10 @@ test("Classic: four independent browser sessions, real WebRTC with simulated mic
 }) => {
   const g = await group(browser);
   try {
-    await g.pages[0].screenshot({ path: "../../work/lobby-desktop.png", fullPage: true });
+    await g.pages[0].screenshot({
+      path: "../../work/lobby-desktop.png",
+      fullPage: true,
+    });
     await configure(g, "classic");
     let verifiedAudio = false;
     while (g.room.phase !== "results") {
@@ -179,18 +241,29 @@ test("Classic: four independent browser sessions, real WebRTC with simulated mic
           .poll(
             async () =>
               guesser.evaluate(async () => {
-                const stats = await Promise.all(window.__peers.map((p) => p.getStats()));
+                const stats = await Promise.all(
+                  window.__peers.map((p) => p.getStats()),
+                );
                 return stats.some((s) =>
                   [...s.values()].some(
-                    (v) => v.type === "inbound-rtp" && v.kind === "audio" && v.bytesReceived > 0,
+                    (v) =>
+                      v.type === "inbound-rtp" &&
+                      v.kind === "audio" &&
+                      v.bytesReceived > 0,
                   ),
                 );
               }),
             { timeout: 20000 },
           )
           .toBeTruthy();
-        await performer.screenshot({ path: "../../work/classic-performer.png", fullPage: true });
-        await guesser.screenshot({ path: "../../work/classic-guesser.png", fullPage: true });
+        await performer.screenshot({
+          path: "../../work/classic-performer.png",
+          fullPage: true,
+        });
+        await guesser.screenshot({
+          path: "../../work/classic-guesser.png",
+          fullPage: true,
+        });
         verifiedAudio = true;
       }
       const answer = g.room.prompt.phrase;
@@ -198,15 +271,26 @@ test("Classic: four independent browser sessions, real WebRTC with simulated mic
         g.room.eligible.map(async (id) => {
           const page = pageFor(g, id);
           await page.getByLabel("Your private guess").fill(answer);
-          await page.getByRole("button", { name: "Guess", exact: true }).click();
+          await page
+            .getByRole("button", { name: "Guess", exact: true })
+            .click();
         }),
       );
       await expect.poll(() => g.room.phase).toBe("roundReveal");
-      await g.pages[0].getByRole("button", { name: "Next", exact: true }).click();
+      await g.pages[0]
+        .getByRole("button", { name: "Next", exact: true })
+        .click();
     }
-    await expect(g.pages[0].getByRole("heading", { name: "A round of applause." })).toBeVisible();
-    await g.pages[0].screenshot({ path: "../../work/results.png", fullPage: true });
-    await g.pages[0].getByRole("button", { name: "Play again", exact: true }).click();
+    await expect(
+      g.pages[0].getByRole("heading", { name: "A round of applause." }),
+    ).toBeVisible();
+    await g.pages[0].screenshot({
+      path: "../../work/results.png",
+      fullPage: true,
+    });
+    await g.pages[0]
+      .getByRole("button", { name: "Play again", exact: true })
+      .click();
     await expect(g.pages[0].getByText("Tonight’s game")).toBeVisible();
     expect(g.errors).toEqual([]);
   } finally {
@@ -219,15 +303,22 @@ test("Gartic: real MediaRecorder upload, preview, private routing, text/audio al
   const g = await group(browser);
   try {
     await configure(g, "gartic");
-    await g.pages[0].screenshot({ path: "../../work/gartic-record.png", fullPage: true });
+    await g.pages[0].screenshot({
+      path: "../../work/gartic-record.png",
+      fullPage: true,
+    });
     for (let r = 0; r < 4; r++) {
       if (r % 2 === 0) await recordAll(g);
       else {
         await Promise.all(
           g.pages.map(async (page, i) => {
             await expect(page.locator("audio")).toBeVisible();
-            await page.getByLabel("Your interpretation").fill(`A robot with hiccups ${r} ${i}`);
-            await page.getByRole("button", { name: "Submit", exact: true }).click();
+            await page
+              .getByLabel("Your interpretation")
+              .fill(`A robot with hiccups ${r} ${i}`);
+            await page
+              .getByRole("button", { name: "Submit", exact: true })
+              .click();
           }),
         );
         await expire(g.room);
@@ -236,11 +327,17 @@ test("Gartic: real MediaRecorder upload, preview, private routing, text/audio al
     await expect.poll(() => g.room.phase).toBe("chainReveal");
     while (g.room.phase === "chainReveal") {
       const first = g.pages[0];
-      const entries = g.room.chains[g.room.ids[g.room.revealChain]].entries.length;
+      const entries =
+        g.room.chains[g.room.ids[g.room.revealChain]].entries.length;
       if (g.room.revealStep === 2)
-        await first.screenshot({ path: "../../work/gartic-reveal.png", fullPage: true });
+        await first.screenshot({
+          path: "../../work/gartic-reveal.png",
+          fullPage: true,
+        });
       if (g.room.revealStep < entries - 1)
-        await first.getByRole("button", { name: "Reveal next step", exact: true }).click();
+        await first
+          .getByRole("button", { name: "Reveal next step", exact: true })
+          .click();
       else
         await first
           .getByRole("button", {
@@ -253,6 +350,71 @@ test("Gartic: real MediaRecorder upload, preview, private routing, text/audio al
       g.pages[0].getByRole("heading", { name: "You made quite a story." }),
     ).toBeVisible();
     expect(g.room.audio.size).toBe(8);
+    expect(g.errors).toEqual([]);
+  } finally {
+    await g.close();
+  }
+});
+test("Gartic awards: friendly vote after the reveal, self-votes blocked, winners on results", async ({
+  browser,
+}) => {
+  const g = await group(browser);
+  try {
+    await configure(g, "gartic", async (host) => {
+      await host.getByLabel("Friendly awards vote after the reveal").check();
+    });
+    await expect.poll(() => g.room.settings.awards).toBe(true);
+    for (let r = 0; r < 4; r++) {
+      if (r % 2 === 0) await recordAll(g);
+      else {
+        await Promise.all(
+          g.pages.map(async (page, i) => {
+            await expect(page.locator("audio")).toBeVisible();
+            await page
+              .getByLabel("Your interpretation")
+              .fill(`Awards guess ${r} ${i}`);
+            await page
+              .getByRole("button", { name: "Submit", exact: true })
+              .click();
+          }),
+        );
+        await expire(g.room);
+      }
+    }
+    await expect.poll(() => g.room.phase).toBe("chainReveal");
+    while (g.room.phase === "chainReveal") {
+      const entries =
+        g.room.chains[g.room.ids[g.room.revealChain]].entries.length;
+      if (g.room.revealStep < entries - 1)
+        await g.pages[0]
+          .getByRole("button", { name: "Reveal next step", exact: true })
+          .click();
+      else
+        await g.pages[0]
+          .getByRole("button", {
+            name: g.room.revealChain === 3 ? "Finish the show" : "Next chain",
+            exact: true,
+          })
+          .click();
+    }
+    await expect(
+      g.pages[0].getByRole("heading", { name: "Hand out some tiny trophies." }),
+    ).toBeVisible();
+    // Everyone's own chain is disabled; pick the first enabled chain for "Funniest".
+    await Promise.all(
+      g.pages.map(async (page) => {
+        const group = page.getByRole("group", {
+          name: "Funniest transformation",
+        });
+        await expect(group.locator("button:disabled")).toHaveCount(1);
+        await group.locator("button:not(:disabled)").first().click();
+        await page.getByRole("button", { name: /Send my picks/ }).click();
+      }),
+    );
+    await expect(
+      g.pages[0].getByRole("heading", { name: "You made quite a story." }),
+    ).toBeVisible();
+    await expect(g.pages[0].getByText("Funniest transformation")).toBeVisible();
     expect(g.errors).toEqual([]);
   } finally {
     await g.close();
@@ -271,10 +433,15 @@ for (const mode of ["duo", "detective", "foley", "ranking"])
           .poll(
             async () =>
               audience.evaluate(async () => {
-                const stats = await Promise.all(window.__peers.map((p) => p.getStats()));
+                const stats = await Promise.all(
+                  window.__peers.map((p) => p.getStats()),
+                );
                 return stats.filter((s) =>
                   [...s.values()].some(
-                    (v) => v.type === "inbound-rtp" && v.kind === "audio" && v.bytesReceived > 0,
+                    (v) =>
+                      v.type === "inbound-rtp" &&
+                      v.kind === "audio" &&
+                      v.bytesReceived > 0,
                   ),
                 ).length;
               }),
@@ -296,31 +463,49 @@ for (const mode of ["duo", "detective", "foley", "ranking"])
         }
         await expect.poll(() => g.room.phase).toBe("vote");
         await Promise.all(
-          g.pages.map((p) => p.getByRole("button", { name: "Abstain", exact: true }).click()),
+          g.pages.map((p) =>
+            p.getByRole("button", { name: "Abstain", exact: true }).click(),
+          ),
         );
         const outsider = pageFor(g, g.room.outsider);
-        await outsider.getByLabel("Your final guess").fill(g.room.prompt.phrase);
-        await outsider.getByRole("button", { name: "Reveal the truth" }).click();
+        await outsider
+          .getByLabel("Your final guess")
+          .fill(g.room.prompt.phrase);
+        await outsider
+          .getByRole("button", { name: "Reveal the truth" })
+          .click();
       } else {
         await recordAll(g);
         while (g.room.phase === "listening") {
-          await g.pages[0].getByRole("button", { name: "Next", exact: true }).click();
+          await g.pages[0]
+            .getByRole("button", { name: "Next", exact: true })
+            .click();
           await g.pages[0].waitForTimeout(150);
         }
         await expect.poll(() => g.room.phase).toBe("vote");
-        await g.pages[0].screenshot({ path: `../../work/${mode}-vote.png`, fullPage: true });
+        await g.pages[0].screenshot({
+          path: `../../work/${mode}-vote.png`,
+          fullPage: true,
+        });
         await Promise.all(
           g.pages.map(async (p) => {
             if (mode === "foley") {
               await p.locator("input[type=radio]").first().check();
               await p.getByRole("button", { name: "Lock my vote" }).click();
-            } else await p.getByRole("button", { name: "Lock this ranking" }).click();
+            } else
+              await p
+                .getByRole("button", { name: "Lock this ranking" })
+                .click();
           }),
         );
       }
       await expect.poll(() => g.room.phase).toBe("roundReveal");
-      await g.pages[0].getByRole("button", { name: "Next", exact: true }).click();
-      await expect(g.pages[0].getByRole("heading", { name: "A round of applause." })).toBeVisible();
+      await g.pages[0]
+        .getByRole("button", { name: "Next", exact: true })
+        .click();
+      await expect(
+        g.pages[0].getByRole("heading", { name: "A round of applause." }),
+      ).toBeVisible();
       expect(g.errors).toEqual([]);
     } finally {
       await g.close();

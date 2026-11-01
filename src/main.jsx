@@ -52,6 +52,9 @@ import {
 } from "./audio.js";
 import "./styles.css";
 import "./motion.css";
+import "./awards.css";
+import { Awards, AwardsResult } from "./Awards.jsx";
+import { announce, announcerAvailable, syncMusic } from "./ambience.js";
 
 const socket = io({ autoConnect: false });
 const icons = {
@@ -183,7 +186,17 @@ function App() {
     if (!state) return;
     const phase = state.phase;
     if (previousPhase.current !== phase) {
-      if (phase === "prepare") cue("prepare");
+      if (phase === "prepare") {
+        cue("prepare");
+        if (state.performers?.includes(state.you)) announce("your-turn");
+      }
+      if (
+        phase === "perform" &&
+        state.participant &&
+        !state.performers?.includes(state.you)
+      )
+        announce("time-to-guess");
+      if (phase === "chainReveal") announce("lets-hear");
       if (["chainReveal", "roundReveal"].includes(phase)) cue("reveal");
       if (phase === "results") cue("results");
       previousPhase.current = phase;
@@ -1089,6 +1102,15 @@ function Lobby({ state, me, host, act, onMic }) {
                 />
                 Write your own starting phrases
               </label>
+              <label className="check-row">
+                <input
+                  disabled={!host}
+                  type="checkbox"
+                  checked={!!state.settings.awards}
+                  onChange={(e) => change({ awards: e.target.checked })}
+                />
+                Friendly awards vote after the reveal
+              </label>
             </>
           ) : (
             <label className="field">
@@ -1264,6 +1286,9 @@ function Game({ state: s, me, session, host, act, action, upload }) {
             ? "One little prompt. So many questionable interpretations."
             : "Good sounds. Bad impressions. Very good company."}
         </p>
+        {mode === "gartic" && s.awards && (
+          <AwardsResult state={s} session={session} />
+        )}
         {mode !== "gartic" && (
           <div className="scoreboard">
             {[...s.players]
@@ -1817,6 +1842,8 @@ function Game({ state: s, me, session, host, act, action, upload }) {
       </section>
     );
   }
+  if (phase === "awards")
+    return <Awards state={s} action={action} session={session} />;
   if (phase === "vote")
     return <Voting state={s} act={act} action={action} session={session} />;
   if (phase === "outsider")
@@ -2010,6 +2037,10 @@ function Voting({ state: s, act, action, session }) {
 }
 function AudioSettings() {
   const [prefs, setPrefs] = useState({ ...audioPrefs });
+  const [hasAnnouncer, setHasAnnouncer] = useState(true);
+  useEffect(() => {
+    announcerAvailable().then(setHasAnnouncer);
+  }, []);
   return (
     <>
       <p className="muted">
@@ -2019,6 +2050,8 @@ function AudioSettings() {
       {[
         ["voice", "Player voices"],
         ["effects", "Game sound effects"],
+        ["announcements", "Announcer lines"],
+        ["music", "Background music"],
       ].map(([key, label]) => (
         <label className="volume-control" key={key}>
           <span>
@@ -2035,6 +2068,7 @@ function AudioSettings() {
               audioPrefs[key] = Number(e.target.value);
               setPrefs({ ...audioPrefs });
               saveAudio();
+              if (key === "music") syncMusic();
             }}
           />
         </label>
@@ -2044,11 +2078,15 @@ function AudioSettings() {
         Preview effects
       </button>
       <p className="small muted">
-        No background music or announcer voices are included. Live audio uses
-        peer connections. Some networks require a TURN relay configured by the
-        host operator.
+        Music is a quiet synthesized loop and pauses while anyone performs or
+        records.
+        {!hasAnnouncer &&
+          " Announcer voice files are not installed on this server, so that slider has no effect yet."}{" "}
+        Live audio uses peer connections. Some networks require a TURN relay
+        configured by the host operator.
       </p>
     </>
   );
 }
+syncMusic();
 createRoot(document.getElementById("root")).render(<App />);

@@ -1,8 +1,17 @@
 // No player recording is ever sent to an AI service.
-export const audioPrefs = JSON.parse(
-  localStorage.getItem("sd-audio") || '{"voice":0.85,"effects":0.3,"announcements":0}',
-);
-export const audioBus = { busy: 0, live: false, effects: new Set(), context: null };
+export const audioPrefs = {
+  voice: 0.85,
+  effects: 0.3,
+  announcements: 0,
+  music: 0,
+  ...JSON.parse(localStorage.getItem("sd-audio") || "{}"),
+};
+export const audioBus = {
+  busy: 0,
+  live: false,
+  effects: new Set(),
+  context: null,
+};
 export function saveAudio() {
   localStorage.setItem("sd-audio", JSON.stringify(audioPrefs));
   window.dispatchEvent(new Event("audio-prefs"));
@@ -29,7 +38,8 @@ export const mic = {
   muted: false,
   request: null,
   async acquire() {
-    if (this.stream?.getTracks().some((t) => t.readyState === "live")) return this.stream;
+    if (this.stream?.getTracks().some((t) => t.readyState === "live"))
+      return this.stream;
     if (this.request) return this.request;
     if (!navigator.mediaDevices?.getUserMedia)
       throw new Error(
@@ -92,9 +102,11 @@ export function createMeter(stream, callback) {
   };
 }
 export function record(stream, maxSeconds, onStop) {
-  const mime = ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4"].find((t) =>
-    MediaRecorder.isTypeSupported(t),
-  );
+  const mime = [
+    "audio/webm;codecs=opus",
+    "audio/ogg;codecs=opus",
+    "audio/mp4",
+  ].find((t) => MediaRecorder.isTypeSupported(t));
   const recorder = new MediaRecorder(stream, {
     ...(mime ? { mimeType: mime } : {}),
     audioBitsPerSecond: 64000,
@@ -130,13 +142,17 @@ export function liveConnections(socket, state, onStatus) {
     elements = new Map(),
     pending = new Map();
   const isPerformer = state.performers.includes(state.you);
-  const ids = state.players.filter((p) => p.connected && p.id !== state.you).map((p) => p.id);
+  const ids = state.players
+    .filter((p) => p.connected && p.id !== state.you)
+    .map((p) => p.id);
   let local, config;
   audioBus.live = true;
   silenceEffects();
   const report = () => {
     const connections = [...peers.values()];
-    const failed = connections.some((p) => ["failed", "disconnected"].includes(p.connectionState));
+    const failed = connections.some((p) =>
+      ["failed", "disconnected"].includes(p.connectionState),
+    );
     onStatus(
       failed
         ? "Audio connection interrupted. Try reconnecting; restrictive networks may need a relay."
@@ -204,7 +220,8 @@ export function liveConnections(socket, state, onStatus) {
       if (data.kind === "offer") {
         peer ??= makePeer(data.from);
         await peer.setRemoteDescription(data.payload);
-        for (const c of pending.get(data.from) || []) await peer.addIceCandidate(c);
+        for (const c of pending.get(data.from) || [])
+          await peer.addIceCandidate(c);
         pending.delete(data.from);
         await peer.setLocalDescription(await peer.createAnswer());
         socket.emit("signal", {
@@ -215,7 +232,8 @@ export function liveConnections(socket, state, onStatus) {
         });
       } else if (data.kind === "answer" && peer) {
         await peer.setRemoteDescription(data.payload);
-        for (const c of pending.get(data.from) || []) await peer.addIceCandidate(c);
+        for (const c of pending.get(data.from) || [])
+          await peer.addIceCandidate(c);
         pending.delete(data.from);
       } else if (data.kind === "candidate") {
         if (peer?.remoteDescription) await peer.addIceCandidate(data.payload);

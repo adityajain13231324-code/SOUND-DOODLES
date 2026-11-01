@@ -6,7 +6,9 @@ import { prompts, matchPrompt } from "../server/prompts.js";
 function fixture(mode = "classic", n = 4) {
   let clock = 100000;
   const room = new Room("ABCDEF", { now: () => clock });
-  const players = Array.from({ length: n }, (_, i) => room.add({ name: `Player ${i}` }));
+  const players = Array.from({ length: n }, (_, i) =>
+    room.add({ name: `Player ${i}` }),
+  );
   room.settings = { ...room.settings, mode, rounds: 1 };
   players.forEach((p) => {
     p.ready = true;
@@ -22,7 +24,13 @@ function fixture(mode = "classic", n = 4) {
 }
 function submitRecordings(f) {
   for (const id of f.room.ids) {
-    const audioId = f.room.storeAudio(id, Buffer.alloc(200, 1), "audio/webm", 1, f.room.phaseId);
+    const audioId = f.room.storeAudio(
+      id,
+      Buffer.alloc(200, 1),
+      "audio/webm",
+      1,
+      f.room.phaseId,
+    );
     f.send(id, "submit", { audioId });
   }
   if (f.room.phase === "handoff") f.expire();
@@ -59,7 +67,8 @@ for (let n = 3; n <= 8; n++)
     for (let round = 0; round < n; round++) {
       assert.equal(new Set(Object.values(schedule[round])).size, n);
       if (round)
-        for (const id of ids) assert.notEqual(schedule[round][id], schedule[round - 1][id]);
+        for (const id of ids)
+          assert.notEqual(schedule[round][id], schedule[round - 1][id]);
     }
   });
 test("minimum players, readiness, mic requirements and role permissions", () => {
@@ -103,13 +112,24 @@ test("unauthorized, stale, oversized and out-of-phase events are rejected", () =
   const f = fixture();
   f.room.start();
   assert.throws(
-    () => f.send(f.room.eligible[0], "pick", { promptId: f.room.choices[0].id }),
+    () =>
+      f.send(f.room.eligible[0], "pick", { promptId: f.room.choices[0].id }),
     /performer/,
   );
   assert.throws(() => f.send(f.room.host, "vote", { ranking: [] }), /closed/);
-  assert.throws(() => f.room.dispatch(f.room.host, "pick", { phaseId: -1 }), /moved/);
   assert.throws(
-    () => f.room.storeAudio(f.room.host, Buffer.alloc(200), "audio/webm", 1, f.room.phaseId),
+    () => f.room.dispatch(f.room.host, "pick", { phaseId: -1 }),
+    /moved/,
+  );
+  assert.throws(
+    () =>
+      f.room.storeAudio(
+        f.room.host,
+        Buffer.alloc(200),
+        "audio/webm",
+        1,
+        f.room.phaseId,
+      ),
     /ended/,
   );
 });
@@ -122,16 +142,20 @@ test("Duo reveals complementary private roles and scores a complete scene", () =
   );
   assert.equal(f.room.view(f.room.eligible[0]).prompt, undefined);
   f.expire();
-  for (const id of f.room.eligible) f.send(id, "guess", { text: f.room.prompt.phrase });
+  for (const id of f.room.eligible)
+    f.send(id, "guess", { text: f.room.prompt.phrase });
   assert.equal(f.room.phase, "roundReveal");
-  for (const id of f.room.performerIds) assert.equal(f.room.player(id).score, 200);
+  for (const id of f.room.performerIds)
+    assert.equal(f.room.player(id).score, 200);
   f.send(f.room.host, "next");
   assert.equal(f.room.phase, "results");
 });
 test("Gartic alternating authentic entries, privacy, passes, reveal and cleanup", () => {
   const f = fixture("gartic", 4);
   f.room.start();
-  const originals = Object.fromEntries(Object.entries(f.room.chains).map(([id, c]) => [id, c.id]));
+  const originals = Object.fromEntries(
+    Object.entries(f.room.chains).map(([id, c]) => [id, c.id]),
+  );
   for (let round = 0; round < 4; round++) {
     assert.equal(f.room.phase, round % 2 ? "interpret" : "record");
     for (const id of f.room.ids) {
@@ -139,13 +163,21 @@ test("Gartic alternating authentic entries, privacy, passes, reveal and cleanup"
       assert.equal(view.chain, undefined);
       assert.equal(view.chains, undefined);
       if (round === 0) {
-        const key = f.room.storeAudio(id, Buffer.alloc(200, 1), "audio/webm", 1, f.room.phaseId);
+        const key = f.room.storeAudio(
+          id,
+          Buffer.alloc(200, 1),
+          "audio/webm",
+          1,
+          f.room.phaseId,
+        );
         assert.ok(f.room.canHear(id, key));
         const other = f.room.ids.find((x) => x !== id);
         assert.equal(f.room.canHear(other, key), false);
         f.send(id, "submit", { audioId: key });
       } else if (round % 2)
-        f.send(id, "submit", { text: `Interpretation ${id.slice(0, 4)} round ${round}` });
+        f.send(id, "submit", {
+          text: `Interpretation ${id.slice(0, 4)} round ${round}`,
+        });
       else f.send(id, "pass");
     }
     f.expire();
@@ -172,11 +204,13 @@ test("three-player Gartic ends with genuine audio, no fabricated text", () => {
   const f = fixture("gartic", 3);
   f.room.start();
   submitRecordings(f);
-  for (const id of f.room.ids) f.send(id, "submit", { text: "An actual guess" });
+  for (const id of f.room.ids)
+    f.send(id, "submit", { text: "An actual guess" });
   f.expire();
   submitRecordings(f);
   assert.equal(f.room.phase, "chainReveal");
-  for (const c of Object.values(f.room.chains)) assert.equal(c.entries.at(-1).type, "audio");
+  for (const c of Object.values(f.room.chains))
+    assert.equal(c.entries.at(-1).type, "audio");
 });
 test("custom starting phrases remain private and pass preserves suggested prompt", () => {
   const f = fixture("gartic", 3);
@@ -221,7 +255,9 @@ for (const mode of ["foley", "ranking"])
     for (const id of f.room.ids) {
       const own = f.room.entries.find((e) => e.author === id);
       assert.throws(() => f.send(id, "vote", { ranking: [own.id] }), /own/);
-      const ids = f.room.entries.filter((e) => e.author !== id).map((e) => e.id);
+      const ids = f.room.entries
+        .filter((e) => e.author !== id)
+        .map((e) => e.id);
       f.send(id, "vote", { ranking: mode === "foley" ? ids.slice(0, 1) : ids });
     }
     assert.equal(f.room.phase, "roundReveal");
@@ -231,7 +267,11 @@ for (const mode of ["foley", "ranking"])
   });
 test("ranking scores use normalized descending Borda points and missing ballots contribute zero", () => {
   const entries = [{ id: "a" }, { id: "b" }, { id: "c" }];
-  assert.deepEqual(rankingScores(entries, { p: ["b", "a"] }), { a: 0.5, b: 1, c: 0 });
+  assert.deepEqual(rankingScores(entries, { p: ["b", "a"] }), {
+    a: 0.5,
+    b: 1,
+    c: 0,
+  });
 });
 test("host migration, late spectator and frozen eligible set", () => {
   const f = fixture();
@@ -249,9 +289,63 @@ test("no-submission timeouts advance every recording mode without fabricated aud
   for (const mode of ["gartic", "foley", "ranking"]) {
     const f = fixture(mode);
     f.room.start();
-    for (let i = 0; i < 8 && !["chainReveal", "roundReveal"].includes(f.room.phase); i++)
+    for (
+      let i = 0;
+      i < 8 && !["chainReveal", "roundReveal"].includes(f.room.phase);
+      i++
+    )
       f.expire();
     assert.ok(["chainReveal", "roundReveal"].includes(f.room.phase));
     assert.equal(f.room.audio.size, 0);
   }
+});
+test("Gartic awards: optional, no self-votes, ties share a title, results carry winners", () => {
+  const f = fixture("gartic", 3);
+  f.room.settings = { ...f.room.settings, awards: true };
+  f.room.start();
+  submitRecordings(f);
+  for (const id of f.room.ids)
+    f.send(id, "submit", { text: "An actual guess" });
+  f.expire();
+  submitRecordings(f);
+  while (f.room.phase === "chainReveal") f.send(f.room.host, "next");
+  assert.equal(f.room.phase, "awards");
+  const [a, b, c] = f.room.ids;
+  const view = f.room.view(a);
+  assert.equal(view.awardChains.length, 3);
+  assert.equal(view.awards, undefined);
+  const ownChain = view.awardChains.find((x) => x.own);
+  const otherChain = view.awardChains.find((x) => !x.own);
+  assert.throws(
+    () => f.send(a, "award", { picks: { funniest: ownChain.id } }),
+    /own chain/,
+  );
+  const ownSound = view.awardChains
+    .flatMap((x) => x.entries)
+    .find((e) => e.own && e.audioId);
+  assert.throws(
+    () => f.send(a, "award", { picks: { bestSound: ownSound.ref } }),
+    /own sound/,
+  );
+  f.send(a, "award", { picks: { funniest: otherChain.id } });
+  f.send(a, "award", { picks: { funniest: ownChain.id } }); // repeat is ignored, not an error
+  f.send(b, "award", { picks: {} }); // abstaining is allowed
+  assert.equal(f.room.phase, "awards");
+  f.send(c, "award", {
+    picks: { funniest: f.room.view(c).awardChains.find((x) => !x.own).id },
+  });
+  assert.equal(f.room.phase, "results");
+  const funniest = f.room.view(a).awards.find((x) => x.key === "funniest");
+  assert.ok(funniest.winners.length >= 1 && funniest.votes >= 1);
+});
+test("Gartic without awards goes straight to results", () => {
+  const f = fixture("gartic", 3);
+  f.room.start();
+  submitRecordings(f);
+  for (const id of f.room.ids)
+    f.send(id, "submit", { text: "An actual guess" });
+  f.expire();
+  submitRecordings(f);
+  while (f.room.phase === "chainReveal") f.send(f.room.host, "next");
+  assert.equal(f.room.phase, "results");
 });
