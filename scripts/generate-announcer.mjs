@@ -1,15 +1,35 @@
 // Generates the optional announcer lines with the official ElevenLabs text-to-speech API.
 // Run once during development, listen to the results, then commit the mp3 files.
-//   ELEVENLABS_API_KEY=... ELEVENLABS_VOICE_ID=... node scripts/generate-announcer.mjs
+//   ELEVENLABS_API_KEY=... node scripts/generate-announcer.mjs   (ELEVENLABS_VOICE_ID is optional)
 // Use a stock or designed voice. Never clone a player's voice. This costs credits, so it is never
 // called during gameplay.
 import { mkdir, writeFile } from "node:fs/promises";
 
 const key = process.env.ELEVENLABS_API_KEY;
-const voice = process.env.ELEVENLABS_VOICE_ID;
-if (!key || !voice) {
-  console.error("Set ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID first.");
+if (!key) {
+  console.error(
+    "Set ELEVENLABS_API_KEY first (a free ElevenLabs account has one under Developers > API keys).",
+  );
   process.exit(1);
+}
+// No voice id needed: unless ELEVENLABS_VOICE_ID is set, pick a stock premade voice from the account.
+let voice = process.env.ELEVENLABS_VOICE_ID;
+if (!voice) {
+  const res = await fetch("https://api.elevenlabs.io/v1/voices", {
+    headers: { "xi-api-key": key },
+  });
+  if (!res.ok) {
+    console.error(`Could not list voices: ${res.status} ${await res.text()}`);
+    process.exit(1);
+  }
+  const { voices } = await res.json();
+  const stock = voices.find((v) => v.category === "premade") || voices[0];
+  if (!stock) {
+    console.error("This account has no voices to use.");
+    process.exit(1);
+  }
+  voice = stock.voice_id;
+  console.log(`Using stock voice: ${stock.name}`);
 }
 const lines = {
   "your-turn": "Your turn.",
