@@ -249,6 +249,13 @@ function App() {
   const seconds = state?.deadline
     ? Math.max(0, Math.ceil((state.deadline - now - offset.current) / 1000))
     : 0;
+  // Remember each phase's full length so the time bar can show what is left.
+  const phaseLength = useRef({ id: null, total: 1 });
+  if (state?.deadline && phaseLength.current.id !== state.phaseId)
+    phaseLength.current = {
+      id: state.phaseId,
+      total: Math.max(1, (state.deadline - state.serverNow) / 1000),
+    };
   const upload = async (blob, duration) => {
     const r = await fetch(`/api/rooms/${session.code}/audio`, {
       method: "POST",
@@ -455,6 +462,16 @@ function App() {
                       </span>
                     )}
                   </div>
+                  {state.deadline && (
+                    <div className="time-track" aria-hidden="true">
+                      <i
+                        className={seconds < 6 ? "urgent" : ""}
+                        style={{
+                          transform: `scaleX(${Math.min(1, seconds / phaseLength.current.total)})`,
+                        }}
+                      />
+                    </div>
+                  )}
                   <Game
                     key={`${state.phaseId}-${state.phase}`}
                     state={state}
@@ -1620,7 +1637,7 @@ function Game({ state: s, me, session, host, act, action, upload }) {
         </h1>
         <div className="performer-avatars">
           {s.performers.map((id) => (
-            <div key={id}>
+            <div key={id} className={id === s.you ? "self" : ""}>
               <Avatar kind={person(id)?.avatar} size={110} />
               <strong>{person(id)?.name}</strong>
             </div>
@@ -1834,12 +1851,21 @@ function LiveMeter() {
   const [level, setLevel] = useState(0);
   useEffect(() => {
     let cleanup,
-      t = setInterval(() => {
-        if (mic.stream && !cleanup) cleanup = createMeter(mic.stream, setLevel);
-      }, 250);
+      smooth = 0;
+    const root = document.documentElement.style;
+    // Ease the raw level so the character swells and settles instead of jittering.
+    const follow = (raw) => {
+      smooth += (raw - smooth) * (raw > smooth ? 0.5 : 0.12);
+      root.setProperty("--voice", smooth.toFixed(3));
+      setLevel(raw);
+    };
+    const t = setInterval(() => {
+      if (mic.stream && !cleanup) cleanup = createMeter(mic.stream, follow);
+    }, 250);
     return () => {
       clearInterval(t);
       cleanup?.();
+      root.removeProperty("--voice");
     };
   }, []);
   return <Wave level={level} />;

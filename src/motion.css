@@ -246,3 +246,136 @@ dialog[open]::backdrop {
 .scoreboard > div:nth-child(n + 4) {
   animation-delay: 0.21s;
 }
+
+/* Time bar: drains smoothly under the round header. */
+.time-track {
+  height: 3px;
+  margin: -1px 0 0;
+  background: var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.time-track i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+  transition:
+    transform 1s linear,
+    background-color 0.4s;
+}
+.time-track i.urgent {
+  background: var(--coral);
+}
+
+/* Performer character swells with the real voice level (--voice, 0 to 1). */
+.performer-avatars .self {
+  position: relative;
+}
+.performer-avatars .self > svg,
+.performer-avatars .self > .avatar {
+  scale: calc(1 + var(--voice, 0) * 0.2);
+  rotate: calc(var(--voice, 0) * -3deg);
+  transition:
+    scale 0.06s linear,
+    rotate 0.06s linear;
+}
+.performer-avatars .self::before,
+.performer-avatars .self::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 55px;
+  width: 140px;
+  height: 140px;
+  margin: -70px 0 0 -70px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  opacity: calc(var(--voice, 0) * 0.55);
+  scale: calc(1 + var(--voice, 0) * 0.55);
+  transition:
+    opacity 0.12s linear,
+    scale 0.12s linear;
+}
+.performer-avatars .self::after {
+  border-color: var(--mint);
+  opacity: calc(var(--voice, 0) * 0.3);
+  scale: calc(1.2 + var(--voice, 0) * 0.95);
+}
+
+/* Custom audio player. The real <audio> stays in the DOM but is visually quiet. */
+.sr-audio {
+  display: block;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.player-ui {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px 10px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.play-button {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  transition:
+    scale 0.25s var(--spring),
+    box-shadow 0.3s var(--ease);
+}
+.play-button:hover {
+  scale: 1.06;
+}
+.play-button:active {
+  scale: 0.94;
+}
+.player-ui.playing .play-button {
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.player-bars {
+  flex: 1;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.player-bars i {
+  flex: 1;
+  height: var(--h);
+  border-radius: 3px;
+  background: var(--line);
+  transition: background-color 0.25s;
+}
+.player-bars i.done {
+  background: var(--accent);
+}
+.player-ui.playing .player-bars i {
+  animation: bar-dance 0.9s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -70ms);
+}
+@keyframes bar-dance {
+  50% {
+    scale: 1 0.62;
+  }
+}
+.player-time {
+  min-width: 42px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}

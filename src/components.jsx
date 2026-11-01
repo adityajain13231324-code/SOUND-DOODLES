@@ -3,6 +3,7 @@ import {
   Mic,
   MicOff,
   Play,
+  Pause,
   Square,
   RotateCcw,
   Check,
@@ -11,7 +12,14 @@ import {
   X,
   ArrowRight,
 } from "lucide-react";
-import { mic, record, createMeter, audioBus, audioPrefs, silenceEffects } from "./audio.js";
+import {
+  mic,
+  record,
+  createMeter,
+  audioBus,
+  audioPrefs,
+  silenceEffects,
+} from "./audio.js";
 
 export function Avatar({ kind = "blob", size = 48, className = "" }) {
   const colors = {
@@ -25,10 +33,16 @@ export function Avatar({ kind = "blob", size = 48, className = "" }) {
     flower: "var(--coral)",
   };
   const shapes = {
-    blob: <path d="M14 47C8 24 20 9 38 12C51 4 69 20 66 35C79 52 62 72 46 68C27 79 10 65 14 47Z" />,
-    star: <path d="m40 5 10 19 21-5-6 22 12 17-23 3-14 16-10-20-23-3 15-18-3-22 21 8Z" />,
+    blob: (
+      <path d="M14 47C8 24 20 9 38 12C51 4 69 20 66 35C79 52 62 72 46 68C27 79 10 65 14 47Z" />
+    ),
+    star: (
+      <path d="m40 5 10 19 21-5-6 22 12 17-23 3-14 16-10-20-23-3 15-18-3-22 21 8Z" />
+    ),
     ghost: <path d="M15 66V34a25 25 0 0 1 50 0v32l-10-8-9 9-10-8-10 9Z" />,
-    cat: <path d="M14 18 30 27Q40 22 50 27L66 16l-1 35Q62 70 40 69 14 69 14 49Z" />,
+    cat: (
+      <path d="M14 18 30 27Q40 22 50 27L66 16l-1 35Q62 70 40 69 14 69 14 49Z" />
+    ),
     robot: (
       <>
         <rect x="12" y="22" width="56" height="44" rx="12" />
@@ -42,7 +56,9 @@ export function Avatar({ kind = "blob", size = 48, className = "" }) {
         <circle cx="57" cy="27" r="13" />
       </>
     ),
-    cloud: <path d="M16 60C0 55 5 33 20 33 15 10 47 6 53 27 78 23 83 59 63 62Z" />,
+    cloud: (
+      <path d="M16 60C0 55 5 33 20 33 15 10 47 6 53 27 78 23 83 59 63 62Z" />
+    ),
     flower: (
       <path d="M40 9C53 0 59 15 55 24 78 13 81 41 65 44 82 59 58 78 49 62 44 85 22 77 26 59 5 67 0 42 19 37 0 20 22 7 30 24 28 14 33 9 40 9Z" />
     ),
@@ -73,7 +89,10 @@ export function Avatar({ kind = "blob", size = 48, className = "" }) {
 }
 export function Wave({ level = 0, decorative = false }) {
   return (
-    <div className={`wave ${decorative ? "decorative" : ""}`} aria-hidden="true">
+    <div
+      className={`wave ${decorative ? "decorative" : ""}`}
+      aria-hidden="true"
+    >
       {Array.from({ length: 31 }, (_, i) => (
         <i
           key={i}
@@ -122,7 +141,9 @@ export function PlayerAudio({
   const ref = useRef(),
     busy = useRef(false);
   const [url, setUrl] = useState(""),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [playing, setPlaying] = useState(false),
+    [clock, setClock] = useState({ time: 0, total: 0 });
   const release = () => {
     if (busy.current) {
       audioBus.busy = Math.max(0, audioBus.busy - 1);
@@ -174,26 +195,82 @@ export function PlayerAudio({
   return (
     <div className="audio-player">
       {url ? (
-        <audio
-          ref={ref}
-          aria-label={label}
-          controls
-          src={url}
-          onPlay={() => {
-            silenceEffects();
-            if (!busy.current) {
-              busy.current = true;
-              audioBus.busy++;
+        <div className={`player-ui ${playing ? "playing" : ""}`}>
+          <button
+            type="button"
+            className="play-button"
+            aria-label={playing ? `Pause: ${label}` : label}
+            onClick={() => {
+              const el = ref.current;
+              if (!el) return;
+              if (el.paused) {
+                if (el.ended) el.currentTime = 0;
+                el.play().catch(() => setError("Tap play to enable audio."));
+              } else el.pause();
+            }}
+          >
+            {playing ? <Pause size={20} /> : <Play size={20} />}
+          </button>
+          <div className="player-bars" aria-hidden="true">
+            {Array.from({ length: 28 }, (_, i) => (
+              <i
+                key={i}
+                className={
+                  clock.total && i / 28 <= clock.time / clock.total
+                    ? "done"
+                    : ""
+                }
+                style={{
+                  "--h": `${28 + Math.abs(Math.sin(i * 1.7)) * 72}%`,
+                  "--i": i,
+                }}
+              />
+            ))}
+          </div>
+          <span className="player-time">{clock.time.toFixed(1)}s</span>
+          <audio
+            ref={ref}
+            className="sr-audio"
+            controls
+            aria-label={label}
+            src={url}
+            onLoadedMetadata={(e) =>
+              setClock((c) => ({
+                ...c,
+                total: Number.isFinite(e.target.duration)
+                  ? e.target.duration
+                  : 0,
+              }))
             }
-            setError("");
-            onPlay?.();
-          }}
-          onPause={release}
-          onEnded={() => {
-            release();
-            onEnded?.();
-          }}
-        />
+            onTimeUpdate={(e) =>
+              setClock((c) => ({
+                time: e.target.currentTime,
+                total: Number.isFinite(e.target.duration)
+                  ? e.target.duration
+                  : c.total,
+              }))
+            }
+            onPlay={() => {
+              silenceEffects();
+              if (!busy.current) {
+                busy.current = true;
+                audioBus.busy++;
+              }
+              setPlaying(true);
+              setError("");
+              onPlay?.();
+            }}
+            onPause={() => {
+              release();
+              setPlaying(false);
+            }}
+            onEnded={() => {
+              release();
+              setPlaying(false);
+              onEnded?.();
+            }}
+          />
+        </div>
       ) : (
         <span>Loading sound…</span>
       )}
@@ -232,7 +309,10 @@ export function Recorder({ maxSeconds = 10, onSubmit, onMic, check = false }) {
   }, [blob]);
   useEffect(() => {
     if (!recording) return;
-    const t = setInterval(() => setElapsed((e) => Math.min(maxSeconds, e + 0.1)), 100);
+    const t = setInterval(
+      () => setElapsed((e) => Math.min(maxSeconds, e + 0.1)),
+      100,
+    );
     return () => clearInterval(t);
   }, [recording, maxSeconds]);
   const begin = async () => {
@@ -249,7 +329,9 @@ export function Recorder({ maxSeconds = 10, onSubmit, onMic, check = false }) {
       stream.getAudioTracks().forEach((t) => (t.enabled = true));
       onMic?.(true);
       setDevices(
-        (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput"),
+        (await navigator.mediaDevices.enumerateDevices()).filter(
+          (d) => d.kind === "audioinput",
+        ),
       );
       meter.current = createMeter(stream, setLevel);
       setRecording(true);
@@ -301,15 +383,31 @@ export function Recorder({ maxSeconds = 10, onSubmit, onMic, check = false }) {
       ) : (
         <button className="button primary" onClick={begin} disabled={uploading}>
           {blob ? <RotateCcw size={18} /> : <Mic size={18} />}{" "}
-          {blob ? "Record again" : check ? "Test microphone" : "Start recording"}
+          {blob
+            ? "Record again"
+            : check
+              ? "Test microphone"
+              : "Start recording"}
         </button>
       )}
       {blob && (
         <div className="preview-take">
-          <audio ref={preview} controls src={url} aria-label="Preview your recording" />
-          <span>{duration.current.toFixed(1)} seconds · only you can hear this preview</span>
+          <audio
+            ref={preview}
+            controls
+            src={url}
+            aria-label="Preview your recording"
+          />
+          <span>
+            {duration.current.toFixed(1)} seconds · only you can hear this
+            preview
+          </span>
           {!check && (
-            <button className="button mint" onClick={submit} disabled={uploading}>
+            <button
+              className="button mint"
+              onClick={submit}
+              disabled={uploading}
+            >
               {uploading ? <Upload size={18} /> : <Check size={18} />}{" "}
               {uploading ? "Uploading…" : "Submit this sound"}
             </button>
@@ -355,8 +453,8 @@ export function Recorder({ maxSeconds = 10, onSubmit, onMic, check = false }) {
             Performance mode: keep humming and unusual sounds
           </label>
           <p className="muted small">
-            Browser support varies. Headphones help keep other players out of your microphone. This
-            test stays on your device.
+            Browser support varies. Headphones help keep other players out of
+            your microphone. This test stays on your device.
           </p>
         </>
       )}
