@@ -1,5 +1,7 @@
 // Word library for Gartic Sounds starting words. Every entry is one or two words, never a sentence.
 // Kept on the server so the full list is never sent to players (samples only, see /api/words/library).
+import { autoAliases } from "./prompts.js";
+
 const seen = new Set();
 // A word lives in exactly one pack, so the "mixed" library never repeats an entry.
 const pack = (id, name, blurb, icon, csv, adult = false) => ({
@@ -235,6 +237,31 @@ const EASY_PACKS = new Set([
 const HARD_PACKS = new Set(["people", "characters", "movies"]);
 export const DIFFICULTY_RANK = { easy: 0, medium: 1, hard: 2 };
 
+/** Natural guesses that are not just a word from the phrase. */
+const EXTRA_ALIASES = {
+  Bedsprings: ["bed springs", "bed spring", "squeaky bed"],
+  "Squeaky Bed": ["bedsprings", "bed springs"],
+  "Creaky Mattress": ["creaky bed", "squeaky mattress"],
+  "Kissing Noises": ["kiss", "kisses", "smooch", "smooching", "making out"],
+  "Loud Smooch": ["kiss", "kissing"],
+  "Sloppy Kiss": ["smooch", "kissing"],
+  "Air Kiss": ["mwah"],
+  "Wolf Whistle": ["catcall", "cat call"],
+  "Cat Call": ["wolf whistle", "wolf whistling", "whistling"],
+  "Pillow Talk": ["whispering"],
+  "Sweet Nothings": ["whispering", "sweet talk"],
+  "Hot Tub": ["jacuzzi"],
+  "Dramatic Moan": ["moaning", "groan"],
+  Moaning: ["groaning"],
+  "Heavy Breathing": ["breathing hard", "heavy breath"],
+  Panting: ["heavy breathing"],
+  Purring: ["cat purr"],
+  Growling: ["growl"],
+};
+
+/** Words that would be too misleading as a solo guess. */
+const NOT_ALIASES = { "Cat Call": ["cat"] };
+
 /** A library word dressed up as a Classic prompt (aliases and hints) so the normal guess matching works. */
 export function libraryPrompt(word, packId) {
   const pack = byId[packId];
@@ -243,15 +270,21 @@ export function libraryPrompt(word, packId) {
   if (tokens > 1) level = Math.min(2, level + 1);
   const aliases = [word];
   if (word.includes("-")) aliases.push(word.replace(/-/g, " "));
-  // Famous names are usually guessed by surname or character name alone.
-  if (tokens > 1 && (packId === "people" || packId === "characters"))
-    aliases.push(word.split(" ").at(-1));
+  // Famous names are usually guessed by surname or character name alone; everything else by any meaningful word.
+  const isName = packId === "people" || packId === "characters";
+  if (tokens > 1 && isName) aliases.push(word.split(" ").at(-1));
+  aliases.push(
+    ...autoAliases(word, { lastOnly: isName, splitHyphens: !isName }),
+  );
+  aliases.push(...(EXTRA_ALIASES[word] || []));
+  const drop = NOT_ALIASES[word];
+  const kept = drop ? aliases.filter((a) => !drop.includes(a)) : aliases;
   return {
     id: `lib:${packId}:${word}`,
     phrase: word,
     category: pack.name,
     difficulty: ["easy", "medium", "hard"][level],
-    aliases,
+    aliases: [...new Set(kept)],
     components: [],
     hints: [pack.name, `${word.replace(/[^\p{L}\p{N}]/gu, "").length} letters`],
     modes: ["classic"],

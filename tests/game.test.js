@@ -817,3 +817,44 @@ test("the spicy pack is made of sounds you can actually perform", async () => {
     assert.ok(spicy.includes(w), w);
   assert.ok(!spicy.includes("rizz") && !spicy.includes("situationship"));
 });
+
+test("guessing is forgiving: a single meaningful word, another word form or a compound all count", async () => {
+  const { libraryPrompt } = await import("../server/words.js");
+  const ok = (word, pack, guesses) => {
+    const prompt = libraryPrompt(word, pack);
+    for (const g of guesses)
+      assert.ok(matchPrompt(prompt, g).correct, `${g} should match ${word}`);
+  };
+  const no = (word, pack, guesses) => {
+    const prompt = libraryPrompt(word, pack);
+    for (const g of guesses)
+      assert.ok(!matchPrompt(prompt, g).correct, `${g} must not match ${word}`);
+  };
+  ok("Sultry Whisper", "spicy", ["whisper", "whispering", "is it a whisper?"]);
+  ok("Moaning", "spicy", ["moan", "moans", "MOANING"]);
+  ok("Heavy Breathing", "spicy", ["breathing", "breath"]);
+  ok("Cat Call", "spicy", ["catcall", "call", "wolf whistle"]);
+  ok("Walk-Of-Shame", "spicy", ["shame", "walk of shame"]);
+  ok("Hot Tub", "spicy", ["tub", "jacuzzi"]);
+  ok("Space Station", "science", ["station", "space"]);
+  ok("Ice-Cream Lick", "spicy", ["lick", "ice cream"]);
+  ok("Johnny Depp", "people", ["depp", "johnny depp"]);
+  ok("Spider-Man", "characters", ["spiderman", "spider man"]);
+  // weak words alone are not enough
+  no("Sultry Whisper", "spicy", ["sultry", "voice", "whale"]);
+  no("Heavy Breathing", "spicy", ["heavy", "bedroom"]);
+  no("Hot Tub", "spicy", ["hot"]);
+  no("Cat Call", "spicy", ["cat"]);
+  no("Johnny Depp", "people", ["johnny"]);
+  no("Spider-Man", "characters", ["man", "spider"]);
+  // curated sound ideas get the same treatment
+  const alarm = prompts.find((p) => p.phrase === "Alarm clock");
+  assert.ok(matchPrompt(alarm, "clock").correct);
+  assert.ok(matchPrompt(alarm, "alarms").correct);
+  const kettle = prompts.find((p) => p.phrase === "Kettle");
+  assert.ok(matchPrompt(kettle, "kettles").correct);
+  assert.ok(!matchPrompt(kettle, "cattle").correct);
+  // scenes still need all their parts
+  const robot = prompts.find((p) => p.phrase === "Robot with hiccups");
+  assert.ok(!matchPrompt(robot, "robot").correct);
+});
