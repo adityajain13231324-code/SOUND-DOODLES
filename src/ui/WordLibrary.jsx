@@ -6,6 +6,7 @@ import {
   Check,
   Clapperboard,
   Drama,
+  Flame,
   Layers,
   Leaf,
   MapPin,
@@ -21,7 +22,7 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { Modal } from "../components.jsx";
-import { Button, Skeleton } from "./kit.jsx";
+import { Badge, Button, Skeleton } from "./kit.jsx";
 
 const ICONS = {
   paw: PawPrint,
@@ -41,6 +42,7 @@ const ICONS = {
   rocket: Rocket,
   layers: Layers,
   sound: Volume2,
+  flame: Flame,
 };
 
 /** Loads the library overview: pack names, sizes and a few random sample words (never the full list). */
@@ -62,7 +64,7 @@ const EXTRA = [
   {
     id: "mixed",
     name: "Everything",
-    blurb: "A surprise from every pack below.",
+    blurb: "A surprise from every family-friendly pack below.",
     icon: "layers",
   },
   {
@@ -76,22 +78,35 @@ const EXTRA = [
 /** Pixel-Peek style browser: every pack as a card with a few random words to peek at. */
 export function WordLibrary({ selected, canChoose, onChoose, onClose }) {
   const { data, error, reload } = useLibrary();
+  // The spicy pack needs a grown-up confirmation before the host can switch it on.
+  const [confirming, setConfirming] = useState(false);
   const card = (p, extra) => {
     const Icon = ICONS[p.icon] || Layers;
     const chosen = selected === p.id;
     return (
-      <article key={p.id} className={`lib-card ${chosen ? "chosen" : ""}`}>
+      <article
+        key={p.id}
+        className={`lib-card ${chosen ? "chosen" : ""} ${p.adult ? "adult" : ""}`}
+      >
         <header>
           <span className="lib-icon">
             <Icon size={22} />
           </span>
           <div>
-            <h3>{p.name}</h3>
+            <h3>
+              {p.name} {p.adult && <Badge tone="coral">18+</Badge>}
+            </h3>
             <small>{extra ?? `${p.count} words`}</small>
           </div>
         </header>
         <p>{p.blurb}</p>
-        {p.samples && (
+        {p.adult && (
+          <p className="lib-adult-note">
+            Suggestive and cheeky, never explicit. Words stay hidden until the
+            game starts.
+          </p>
+        )}
+        {p.samples?.length > 0 && (
           <ul
             className="lib-samples"
             aria-label={`Sample words from ${p.name}`}
@@ -101,15 +116,42 @@ export function WordLibrary({ selected, canChoose, onChoose, onClose }) {
             ))}
           </ul>
         )}
-        <Button
-          variant={chosen ? "mint" : "secondary"}
-          size="sm"
-          disabled={!canChoose}
-          icon={chosen ? <Check size={16} /> : undefined}
-          onClick={() => onChoose(p.id)}
-        >
-          {chosen ? "In use" : canChoose ? "Use this pack" : "Host picks"}
-        </Button>
+        {p.adult && confirming && !chosen ? (
+          <div className="lib-confirm" role="group" aria-label="Confirm 18+">
+            <strong>Is everyone here 18 or older?</strong>
+            <div className="lib-confirm-actions">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setConfirming(false);
+                  onChoose(p.id, true);
+                }}
+              >
+                We’re all adults
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirming(false)}
+              >
+                Never mind
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant={chosen ? "mint" : "secondary"}
+            size="sm"
+            disabled={!canChoose}
+            icon={chosen ? <Check size={16} /> : undefined}
+            onClick={() =>
+              p.adult && !chosen ? setConfirming(true) : onChoose(p.id, false)
+            }
+          >
+            {chosen ? "In use" : canChoose ? "Use this pack" : "Host picks"}
+          </Button>
+        )}
       </article>
     );
   };
@@ -151,13 +193,9 @@ export function WordLibrary({ selected, canChoose, onChoose, onClose }) {
             <div className="lib-grid">
               {EXTRA.map((e) =>
                 card(
-                  {
-                    ...e,
-                    samples: null,
-                    count: e.id === "mixed" ? data.total : 0,
-                  },
+                  { ...e, samples: null, count: 0 },
                   e.id === "mixed"
-                    ? `${data.total.toLocaleString()} words`
+                    ? `${data.familyTotal.toLocaleString()} words`
                     : "Original sound ideas",
                 ),
               )}

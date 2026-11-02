@@ -537,6 +537,81 @@ test("word library browser opens, shows packs with samples, and the host can pic
     await g.close();
   }
 });
+test("mic check lists the available microphones before any test", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext({ permissions: ["microphone"] });
+  const page = await ctx.newPage();
+  try {
+    await page.goto(base);
+    await page
+      .getByRole("button", { name: "Create a room", exact: true })
+      .click();
+    await page.getByLabel("Your nickname").fill("Mic tester");
+    await page
+      .getByRole("button", { name: "Create room", exact: true })
+      .click();
+    await page.getByText("Tonight’s game").waitFor();
+    await page.getByRole("button", { name: "A quick mic check?" }).click();
+    const options = page.locator("dialog[open] select option");
+    await expect
+      .poll(() => options.count(), { timeout: 15000 })
+      .toBeGreaterThan(1);
+    await expect(options.first()).toHaveText("System default");
+  } finally {
+    await ctx.close();
+  }
+});
+test("Classic: the performer picks from 4 or 5 one-or-two-word choices, easiest first", async ({
+  browser,
+}) => {
+  const g = await group(browser, 3);
+  try {
+    const host = g.pages[0];
+    await host.getByRole("radio", { name: "5 words" }).click();
+    await expect.poll(() => g.room.settings.choices).toBe(5);
+    await configure(g, "classic");
+    await expect.poll(() => g.room.phase).toBe("choose");
+    const performer = pageFor(g, g.room.performerIds[0]);
+    const cards = performer.locator(".prompt-choices button");
+    await expect(cards).toHaveCount(5);
+    const phrases = await cards.locator("strong").allTextContents();
+    for (const phrase of phrases)
+      expect(phrase.trim().split(/\s+/).length).toBeLessThanOrEqual(2);
+    await expect(cards.first().locator(".diff b")).toBeVisible();
+    await cards.nth(2).click();
+    await expect.poll(() => g.room.phase).toBe("prepare");
+    expect(g.errors).toEqual([]);
+  } finally {
+    await g.close();
+  }
+});
+test("spicy pack needs the 18+ confirmation and shows a banner to everyone", async ({
+  browser,
+}) => {
+  const g = await group(browser, 2);
+  try {
+    const [host, guest] = g.pages;
+    await host.getByRole("button", { name: "Browse the word library" }).click();
+    await expect(
+      host.getByRole("heading", { name: "Word library" }),
+    ).toBeVisible();
+    const card = host.locator(".lib-card").filter({ hasText: "Spicy" });
+    await expect(card.getByText("18+").first()).toBeVisible();
+    await expect(card.locator(".lib-samples")).toHaveCount(0);
+    await card.getByRole("button", { name: "Use this pack" }).click();
+    await expect(host.getByText("Is everyone here 18 or older?")).toBeVisible();
+    expect(g.room.settings.wordPack).not.toBe("spicy");
+    await host.getByRole("button", { name: "We’re all adults" }).click();
+    await expect.poll(() => g.room.settings.wordPack).toBe("spicy");
+    expect(g.room.settings.adultsOnly).toBe(true);
+    await host.keyboard.press("Escape");
+    await expect(guest.getByText("Spicy words are on.")).toBeVisible();
+    expect(g.errors).toEqual([]);
+  } finally {
+    await g.close();
+  }
+});
 for (const mode of ["duo", "detective", "foley", "ranking"])
   test(`${mode}: complete browser match to results`, async ({ browser }) => {
     const g = await group(browser);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Mic,
   MicOff,
@@ -303,6 +303,24 @@ export function Recorder({ maxSeconds = 10, onSubmit, onMic, check = false }) {
     [error, setError] = useState(""),
     [uploading, setUploading] = useState(false),
     [devices, setDevices] = useState([]);
+  // Browsers hide device names until microphone permission is granted, so we list what we can
+  // straight away, refresh when hardware changes, and offer a button that unlocks the names.
+  const refreshDevices = useCallback(async () => {
+    try {
+      const all = await navigator.mediaDevices.enumerateDevices();
+      setDevices(
+        all.filter(
+          (d) =>
+            d.kind === "audioinput" &&
+            d.deviceId &&
+            d.deviceId !== "default" &&
+            d.deviceId !== "communications",
+        ),
+      );
+    } catch {
+      /* the list is a convenience */
+    }
+  }, []);
   const stop = useRef(),
     meter = useRef(),
     alive = useRef(true),
@@ -317,6 +335,16 @@ export function Recorder({ maxSeconds = 10, onSubmit, onMic, check = false }) {
     },
     [],
   );
+  useEffect(() => {
+    if (!check || !navigator.mediaDevices?.enumerateDevices) return;
+    refreshDevices();
+    navigator.mediaDevices.addEventListener?.("devicechange", refreshDevices);
+    return () =>
+      navigator.mediaDevices.removeEventListener?.(
+        "devicechange",
+        refreshDevices,
+      );
+  }, [check, refreshDevices]);
   useEffect(() => {
     if (!blob) return;
     const u = URL.createObjectURL(blob);
@@ -344,11 +372,7 @@ export function Recorder({ maxSeconds = 10, onSubmit, onMic, check = false }) {
       }
       stream.getAudioTracks().forEach((t) => (t.enabled = true));
       onMic?.(true);
-      setDevices(
-        (await navigator.mediaDevices.enumerateDevices()).filter(
-          (d) => d.kind === "audioinput",
-        ),
-      );
+      await refreshDevices();
       meter.current = createMeter(stream, setLevel);
       setRecording(true);
       stop.current = record(stream, maxSeconds, (b, d) => {
@@ -444,18 +468,54 @@ export function Recorder({ maxSeconds = 10, onSubmit, onMic, check = false }) {
               disabled={recording}
               onChange={(e) => {
                 mic.device = e.target.value;
+                try {
+                  if (e.target.value)
+                    localStorage.setItem("sd-mic", e.target.value);
+                  else localStorage.removeItem("sd-mic");
+                } catch {}
                 mic.stop();
                 setDevices([...devices]);
               }}
             >
               <option value="">System default</option>
-              {devices.map((d) => (
+              {devices.map((d, i) => (
                 <option key={d.deviceId} value={d.deviceId}>
-                  {d.label || "Microphone"}
+                  {d.label || `Microphone ${i + 1}`}
                 </option>
               ))}
             </select>
           </label>
+          {devices.length > 0 && !devices.some((d) => d.label) && (
+            <div className="mic-unlock">
+              <p className="muted small">
+                Your browser shows microphone names only after you allow access.
+              </p>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                disabled={recording}
+                onClick={async () => {
+                  setError("");
+                  try {
+                    await mic.acquire();
+                    await refreshDevices();
+                  } catch (e) {
+                    setError(e.message);
+                  } finally {
+                    mic.stop();
+                  }
+                }}
+              >
+                Find my microphones
+              </button>
+            </div>
+          )}
+          {devices.length === 0 && (
+            <p className="muted small">
+              No other microphones found yet. Plug one in, or tap Test
+              microphone and allow access.
+            </p>
+          )}
           <label className="check-row">
             <input
               type="checkbox"

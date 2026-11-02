@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
+  Flame,
   Info,
   LogOut,
   Mic,
@@ -12,7 +13,7 @@ import {
 import { MODES } from "../../shared/modes.js";
 import { mic, createMeter } from "../audio.js";
 import { Poster } from "../ui/Poster.jsx";
-import { StartingWords } from "../ui/StartingWords.jsx";
+import { ClassicWords, StartingWords } from "../ui/StartingWords.jsx";
 import { PlayerCard, GhostSlot } from "../ui/PlayerCard.jsx";
 import { RoomCodeChip } from "../ui/RoomCodeChip.jsx";
 import { Drawer, Popover } from "../ui/overlays.jsx";
@@ -145,9 +146,13 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
                   ? "Reconnecting…"
                   : p.spectator
                     ? "Spectating"
-                    : p.ready
-                      ? "Ready to make noise"
-                      : "Getting comfy"
+                    : state.settings.mode === "classic" && !p.mic
+                      ? p.ready
+                        ? "Ready · guessing only"
+                        : "No mic check yet"
+                      : p.ready
+                        ? "Ready to make noise"
+                        : "Getting comfy"
               }
             />
           ))}
@@ -225,6 +230,18 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
               />
             ))}
           </div>
+        )}
+        {state.settings.adultsOnly && (
+          <div className="adult-banner" role="status">
+            <Flame size={18} aria-hidden="true" />
+            <span>
+              <strong>Spicy words are on.</strong> Flirty and cheeky, for 18+
+              groups only. The host can switch back anytime.
+            </span>
+          </div>
+        )}
+        {state.settings.mode === "classic" && (
+          <ClassicWords settings={state.settings} host={host} change={change} />
         )}
         {state.settings.mode === "gartic" && (
           <StartingWords
@@ -324,6 +341,20 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
           <span className="note-dot" aria-hidden="true" />
           {statusLine}
         </p>
+        {state.settings.mode === "classic" &&
+          active.some((p) => !p.mic) &&
+          active.length >= 2 && (
+            <p className="lobby-note warn" role="status">
+              <Mic size={15} aria-hidden="true" />
+              {active
+                .filter((p) => !p.mic)
+                .map((p) => p.name)
+                .join(", ")}{" "}
+              {active.filter((p) => !p.mic).length === 1 ? "hasn’t" : "haven’t"}{" "}
+              done a mic check, so they can only guess and won’t get a turn on
+              the mic.
+            </p>
+          )}
       </section>
 
       {settings && (

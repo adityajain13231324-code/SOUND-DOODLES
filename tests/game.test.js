@@ -404,6 +404,7 @@ test("word library: 1,000+ unique entries, every one is one or two words, no spo
   const {
     WORD_PACKS,
     WORD_TOTAL,
+    FAMILY_TOTAL,
     WORD_SETTINGS,
     cleanStartingWord,
     libraryOverview,
@@ -418,7 +419,14 @@ test("word library: 1,000+ unique entries, every one is one or two words, no spo
     WORD_SETTINGS.includes("sounds") && WORD_SETTINGS.includes("mixed"),
   );
   assert.equal(wordsFor("sounds"), null);
-  assert.equal(wordsFor("mixed").length, WORD_TOTAL);
+  assert.equal(wordsFor("mixed").length, FAMILY_TOTAL);
+  assert.ok(
+    FAMILY_TOTAL < WORD_TOTAL,
+    "the adult pack stays out of Everything",
+  );
+  const spicy = WORD_PACKS.find((p) => p.id === "spicy");
+  assert.ok(spicy.adult && spicy.words.length >= 60);
+  assert.ok(!wordsFor("mixed").includes(spicy.words[0]));
   const overview = libraryOverview(6);
   for (const p of overview.packs) {
     assert.ok(p.samples.length <= 6 && p.count > 20);
@@ -506,4 +514,148 @@ test("a pack never repeats a word until it is used up", () => {
   f.room.settings = { ...f.room.settings, wordPack: "vehicles" };
   const drawn = Array.from({ length: 40 }, () => f.room.drawWord());
   assert.equal(new Set(drawn).size, 40);
+});
+
+test("spicy pack is opt-in: needs the 18+ confirmation, stays out of Everything and previews nothing", async () => {
+  const { libraryOverview } = await import("../server/words.js");
+  const f = fixture("classic", 3);
+  const base = { ...f.room.settings };
+  assert.throws(
+    () =>
+      f.send(f.room.host, "settings", {
+        settings: { ...base, wordPack: "spicy" },
+      }),
+    /18\+/,
+  );
+  assert.throws(
+    () =>
+      f.send(f.room.host, "settings", {
+        settings: { ...base, wordPack: "spicy", adultsOnly: "yes" },
+      }),
+    /18\+/,
+  );
+  f.send(f.room.host, "settings", {
+    settings: { ...base, wordPack: "spicy", adultsOnly: true },
+  });
+  assert.equal(f.room.settings.adultsOnly, true);
+  f.send(f.room.host, "settings", {
+    settings: { ...base, wordPack: "food", adultsOnly: true },
+  });
+  assert.equal(
+    f.room.settings.adultsOnly,
+    false,
+    "leaving the spicy pack clears the flag",
+  );
+  const spicy = libraryOverview().packs.find((p) => p.id === "spicy");
+  assert.equal(spicy.adult, true);
+  assert.deepEqual(spicy.samples, []);
+});
+test("Classic deals 3, 4 or 5 words to pick from, easiest first, all distinct", () => {
+  for (const count of [3, 4, 5]) {
+    const f = fixture("classic", 3);
+    f.room.settings = { ...f.room.settings, choices: count };
+    f.room.start();
+    const ranks = { easy: 0, medium: 1, hard: 2 };
+    assert.equal(f.room.choices.length, count);
+    assert.equal(new Set(f.room.choices.map((p) => p.id)).size, count);
+    const sorted = [...f.room.choices].sort(
+      (a, b) => ranks[a.difficulty] - ranks[b.difficulty],
+    );
+    assert.deepEqual(
+      f.room.choices.map((p) => p.id),
+      sorted.map((p) => p.id),
+    );
+    const performer = f.room.performerIds[0];
+    const view = f.room.view(performer);
+    assert.equal(view.choices.length, count);
+    assert.ok(view.choices.every((c) => c.category && c.difficulty));
+    const guesser = f.room.ids.find((id) => id !== performer);
+    assert.equal(f.room.view(guesser).choices, undefined);
+  }
+  assert.throws(() => {
+    const f = fixture("classic", 3);
+    f.send(f.room.host, "settings", {
+      settings: { ...f.room.settings, choices: 9 },
+    });
+  }, /3, 4 or 5/);
+});
+test("Classic draws from the chosen pack, matches library guesses and keeps spicy out of Everything", async () => {
+  const { wordsFor } = await import("../server/words.js");
+  const f = fixture("classic", 3);
+  f.room.settings = { ...f.room.settings, wordPack: "animals", choices: 5 };
+  const animals = new Set(wordsFor("animals"));
+  f.room.start();
+  assert.ok(f.room.choices.every((p) => animals.has(p.phrase)));
+  const pick = f.room.choices[0];
+  const performer = f.room.performerIds[0];
+  const guesser = f.room.ids.find((id) => id !== performer);
+  f.send(performer, "pick", { promptId: pick.id });
+  f.expire();
+  f.send(guesser, "guess", { text: pick.phrase.toLowerCase() });
+  assert.ok(f.room.solved[guesser] > 0);
+
+  // famous names can be guessed by surname
+  const g = fixture("classic", 3);
+  g.room.settings = { ...g.room.settings, wordPack: "people" };
+  g.room.start();
+  const person =
+    g.room.choices.find((p) => p.phrase.includes(" ")) || g.room.choices[0];
+  g.send(g.room.performerIds[0], "pick", { promptId: person.id });
+  g.expire();
+  const other = g.room.ids.find((id) => id !== g.room.performerIds[0]);
+  g.send(other, "guess", { text: person.phrase.split(" ").at(-1) });
+  assert.ok(g.room.solved[other] > 0);
+
+  // "Everything" never deals a spicy word
+  const spicyWords = new Set(wordsFor("spicy"));
+  const all = fixture("classic", 3);
+  all.room.settings = { ...all.room.settings, wordPack: "mixed", choices: 5 };
+  for (let i = 0; i < 60; i++)
+    assert.ok(all.room.drawChoices().every((p) => !spicyWords.has(p.phrase)));
+});
+
+test("Classic only deals one- or two-word prompts, never scenes or sentences", async () => {
+  const { prompts } = await import("../server/prompts.js");
+  const short = prompts.filter(
+    (p) =>
+      p.modes.includes("classic") && p.phrase.trim().split(/\s+/).length <= 2,
+  );
+  assert.ok(short.length >= 100, "enough short sound ideas to deal from");
+  for (const wordPack of ["sounds", "mixed", "animals", "people"]) {
+    const f = fixture("classic", 3);
+    f.room.settings = { ...f.room.settings, wordPack, choices: 5 };
+    for (let i = 0; i < 80; i++)
+      for (const p of f.room.drawChoices())
+        assert.ok(
+          p.phrase.trim().split(/\s+/).length <= 2,
+          `${wordPack}: ${p.phrase}`,
+        );
+  }
+});
+test("small Classic rooms always play at least four rounds, even if only one player checked a mic", () => {
+  const rounds = (n, micCount) => {
+    const f = fixture("classic", n);
+    f.players.forEach((p, i) => (p.mic = i < micCount));
+    f.room.settings = { ...f.room.settings, rounds: 1 };
+    f.room.start();
+    return f.room.totalRounds;
+  };
+  assert.equal(rounds(2, 2), 4); // each of two friends performs twice
+  assert.equal(rounds(2, 1), 4); // one performer: still a real game, not a single round
+  assert.equal(rounds(3, 3), 6);
+  assert.equal(rounds(4, 4), 4);
+  // both friends really get turns on the mic
+  const f = fixture("classic", 2);
+  f.room.start();
+  const performers = new Set();
+  while (f.room.phase !== "results") {
+    const performer = f.room.performerIds[0];
+    performers.add(performer);
+    f.send(performer, "pick", { promptId: f.room.choices[0].id });
+    f.expire();
+    const guesser = f.room.ids.find((id) => id !== performer);
+    f.send(guesser, "guess", { text: f.room.prompt.phrase });
+    f.send(f.room.host, "next");
+  }
+  assert.equal(performers.size, 2);
 });

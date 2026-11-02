@@ -2,9 +2,9 @@
 export const THEME_KEY = "sd-theme";
 export const MOTION_KEY = "sd-reduce-motion";
 export const THEME_LIST = [
+  { key: "paper", name: "Paper Playground", blurb: "Good old scribbly fun." },
   { key: "midnight", name: "Midnight Studio", blurb: "A little after hours." },
   { key: "neon", name: "Neon Arcade", blurb: "Turn up the electric." },
-  { key: "paper", name: "Paper Playground", blurb: "Good old scribbly fun." },
   { key: "sunset", name: "Sunset Lounge", blurb: "Stay for one more round." },
 ];
 const META = {
@@ -20,7 +20,7 @@ export const prefersReducedMotion = () =>
 
 export function applyTheme(key) {
   const root = document.documentElement;
-  if (!META[key]) key = "midnight";
+  if (!META[key]) key = "paper";
   const set = () => {
     root.dataset.theme = key;
     document
@@ -57,4 +57,14 @@ export function watchVisibility() {
   document.addEventListener("visibilitychange", update);
   update();
   return () => document.removeEventListener("visibilitychange", update);
+}
+
+export const FX_KEY = "sd-fx";
+/** "Lite" turns off blurs and moving backdrops, which helps older phones feel snappy. */
+export function applyFx(lite) {
+  if (lite) document.documentElement.dataset.fx = "lite";
+  else delete document.documentElement.dataset.fx;
+  try {
+    localStorage.setItem(FX_KEY, lite ? "lite" : "full");
+  } catch {}
 }

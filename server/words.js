@@ -2,11 +2,12 @@
 // Kept on the server so the full list is never sent to players (samples only, see /api/words/library).
 const seen = new Set();
 // A word lives in exactly one pack, so the "mixed" library never repeats an entry.
-const pack = (id, name, blurb, icon, csv) => ({
+const pack = (id, name, blurb, icon, csv, adult = false) => ({
   id,
   name,
   blurb,
   icon,
+  adult,
   words: csv
     .split(",")
     .map((w) => w.trim())
@@ -124,19 +125,45 @@ export const WORD_PACKS = [
     "rocket",
     `Gravity,Magnet,Electricity,Atom,Molecule,Proton,Neutron,Electron,Laser,Radar,Radio Wave,X-Ray,Microscope,Telescope,Test Tube,Beaker,Lab Coat,Periodic Table,Chemistry,Physics,Biology,Fossil,Dinosaur,Skeleton,Brain,Heart,Lungs,Stomach,DNA,Virus,Bacteria,Vaccine,Stethoscope,Thermometer,Sun,Moon,Earth,Mercury,Venus,Mars,Jupiter,Saturn,Uranus,Neptune,Pluto,Comet,Asteroid,Meteor,Galaxy,Milky Way,Nebula,Supernova,Black Hole,Big Bang,Solar System,Space Station,Astronaut,Moon Landing,Rocket Launch,Satellite Dish,Robot Arm,Artificial Intelligence,Internet,Wi-Fi,Bluetooth,Computer,Binary,Pixel,Hologram,Circuit,Battery,Solar Panel,Wind Turbine,Volcano,Earthquake,Compass,Barometer`,
   ),
+  pack(
+    "spicy",
+    "Spicy",
+    "Flirty, cheeky and a little naughty. 18+ groups only.",
+    "flame",
+    `Wink,Kiss,French Kiss,Blow Kiss,Love Bite,Hickey,Cuddle,Snuggle,Spooning,Slow Dance,Last Dance,Pillow Talk,Pickup Line,Sweet Talk,Heart Eyes,Butterflies,Crush,First Date,Blind Date,Speed Dating,Dating App,Swipe Right,Situationship,Rizz,Love Letter,Valentine,Candlelight Dinner,Rose Petals,Bubble Bath,Hot Tub,Jacuzzi,Champagne Toast,Slow Jam,Lipstick,Cologne,High Heels,Lingerie,Silk Robe,Bikini,Speedo,Six Pack,Shirtless,Booty Call,Walk-Of-Shame,Morning After,One-Night Stand,Strip Poker,Striptease,Pole Dance,Lap Dance,Twerk,Belly Dance,Salsa,Tango,Back Rub,Massage,Skinny Dipping,Sauna,Nightclub,Cocktail,Tequila Shots,Hangover,Drunk Text,Spin-The-Bottle,Truth-Or-Dare,Love Triangle,Jealous Ex,Ex Texting,Ghosting,Catfish,Red Flag,Green Flag,Third Wheel,Wingman,Cuffing Season,Honeymoon,Wedding Night,Bachelorette,Bachelor Party,Moan,Purr,Heavy Breathing,Sultry Voice,Seductive Laugh,Groan,Bedroom Eyes,Eyebrow Raise,Hair Flip,Booty Shake,Flex,Mistletoe,Cupid,Casanova,Romeo,Juliet,Don Juan,Femme Fatale,Heartbreaker,Sugar Daddy,Gold Digger,Hot Mess,Thirst Trap,Simp,Just Friends,Slow Burn,Chemistry,Eye Contact,Love Handles,Beer Goggles,Midnight Snack,Netflix-And-Chill,Gym Crush,Mixtape,Oil Massage,Hot Sauce,Whipped Cream,Cherry,Peach Emoji,Eggplant Emoji`,
+    true,
+  ),
 ];
 
 export const PACK_IDS = WORD_PACKS.map((p) => p.id);
 const byId = Object.fromEntries(WORD_PACKS.map((p) => [p.id, p]));
 export const WORD_TOTAL = WORD_PACKS.reduce((n, p) => n + p.words.length, 0);
+/** Words in the family-friendly packs, i.e. what "Everything" draws from. */
+export const FAMILY_TOTAL = WORD_PACKS.filter((p) => !p.adult).reduce(
+  (n, p) => n + p.words.length,
+  0,
+);
+export const ADULT_PACK_IDS = WORD_PACKS.filter((p) => p.adult).map(
+  (p) => p.id,
+);
 
 /** Valid values for the "wordPack" room setting. "sounds" is the original sound-idea list, "mixed" is the whole library. */
 export const WORD_SETTINGS = ["sounds", "mixed", ...PACK_IDS];
 
+/** Every library entry for a setting (family-friendly packs for "mixed"), keeping track of its pack. */
+export function libraryEntries(setting) {
+  const packs =
+    setting === "mixed"
+      ? WORD_PACKS.filter((p) => !p.adult)
+      : WORD_PACKS.filter((p) => p.id === setting);
+  return packs.flatMap((p) => p.words.map((word) => ({ word, packId: p.id })));
+}
+
 /** Words for a setting. "sounds" returns null so the caller uses the curated sound prompts. */
 export function wordsFor(setting) {
   if (setting === "sounds") return null;
-  if (setting === "mixed") return WORD_PACKS.flatMap((p) => p.words);
+  if (setting === "mixed")
+    return WORD_PACKS.filter((p) => !p.adult).flatMap((p) => p.words);
   return byId[setting]?.words || null;
 }
 
@@ -166,13 +193,50 @@ export function libraryOverview(samples = 6) {
   };
   return {
     total: WORD_TOTAL,
-    packs: WORD_PACKS.map(({ id, name, blurb, icon, words }) => ({
+    familyTotal: FAMILY_TOTAL,
+    packs: WORD_PACKS.map(({ id, name, blurb, icon, adult, words }) => ({
       id,
       name,
       blurb,
       icon,
+      adult,
       count: words.length,
-      samples: pick(words),
+      // Adult packs never preview words: nobody should be surprised by the browser.
+      samples: adult ? [] : pick(words),
     })),
+  };
+}
+
+const EASY_PACKS = new Set([
+  "animals",
+  "vehicles",
+  "actions",
+  "music",
+  "nature",
+  "objects",
+]);
+const HARD_PACKS = new Set(["people", "characters", "movies"]);
+export const DIFFICULTY_RANK = { easy: 0, medium: 1, hard: 2 };
+
+/** A library word dressed up as a Classic prompt (aliases and hints) so the normal guess matching works. */
+export function libraryPrompt(word, packId) {
+  const pack = byId[packId];
+  const tokens = word.split(" ").length;
+  let level = EASY_PACKS.has(packId) ? 0 : HARD_PACKS.has(packId) ? 2 : 1;
+  if (tokens > 1) level = Math.min(2, level + 1);
+  const aliases = [word];
+  if (word.includes("-")) aliases.push(word.replace(/-/g, " "));
+  // Famous names are usually guessed by surname or character name alone.
+  if (tokens > 1 && (packId === "people" || packId === "characters"))
+    aliases.push(word.split(" ").at(-1));
+  return {
+    id: `lib:${packId}:${word}`,
+    phrase: word,
+    category: pack.name,
+    difficulty: ["easy", "medium", "hard"][level],
+    aliases,
+    components: [],
+    hints: [pack.name, `${word.replace(/[^\p{L}\p{N}]/gu, "").length} letters`],
+    modes: ["classic"],
   };
 }

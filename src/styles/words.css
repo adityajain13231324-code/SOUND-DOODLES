@@ -275,3 +275,130 @@ dialog:has(.lib) {
 .lib-grid {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
 }
+
+/* Classic word choices, difficulty tags and the 18+ pack */
+.sw-sub {
+  margin: -4px 0 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.segmented.count {
+  grid-template-columns: repeat(3, 1fr);
+}
+.segmented.count button {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  text-align: center;
+  min-height: 72px;
+}
+.segmented.count strong {
+  font: 800 1.8rem / 1 var(--display);
+}
+.sw-flame {
+  vertical-align: -2px;
+  margin-right: 4px;
+  color: var(--coral);
+}
+.badge-coral {
+  background: var(--coral);
+  color: #2b0f12;
+}
+[data-theme="paper"] .badge-coral {
+  color: #fffdf7;
+}
+.lib-card.adult {
+  border-color: color-mix(in srgb, var(--coral) 60%, var(--line));
+}
+.lib-card h3 .badge {
+  margin-left: 6px;
+  vertical-align: 2px;
+}
+.lib-adult-note {
+  font-size: var(--fs-xs);
+}
+.lib-confirm {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  background: color-mix(in srgb, var(--coral) 12%, var(--surface));
+  border: 1px dashed var(--coral);
+  border-radius: var(--r-md);
+  animation: pop-in var(--t3) var(--ease-spring) both;
+}
+.lib-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.adult-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin: var(--s-3) 0;
+  padding: var(--s-3) var(--s-4);
+  font-size: var(--fs-sm);
+  background: color-mix(in srgb, var(--coral) 14%, var(--surface));
+  border: var(--border-w) solid var(--coral);
+  border-radius: var(--r-md);
+  animation: rise var(--t4) var(--ease-out) both;
+}
+.adult-banner svg {
+  flex: none;
+  color: var(--coral);
+}
+
+/* Choose screen: difficulty-coded cards, easiest first */
+.prompt-choices {
+  display: grid;
+  gap: var(--s-3);
+  width: min(560px, 100%);
+  margin: var(--s-4) auto;
+}
+.prompt-choices button {
+  animation: rise var(--t4) var(--ease-out) both;
+  animation-delay: calc(var(--n, 0) * 70ms);
+}
+.prompt-choices button:nth-child(2) {
+  --n: 1;
+}
+.prompt-choices button:nth-child(3) {
+  --n: 2;
+}
+.prompt-choices button:nth-child(4) {
+  --n: 3;
+}
+.prompt-choices button:nth-child(5) {
+  --n: 4;
+}
+.diff {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.diff b {
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #10281c;
+  background: var(--mint);
+}
+.diff-medium b {
+  color: #3a2a00;
+  background: var(--gold);
+}
+.diff-hard b {
+  color: #2b0f12;
+  background: var(--coral);
+}
+[data-theme="paper"] .diff b {
+  color: #fffdf7;
+}
+[data-theme="paper"] .diff-medium b {
+  color: #25222b;
+}
+.diff i {
+  font-style: normal;
+}

@@ -329,7 +329,7 @@ export function Game({ state: s, me, session, host, act, action, upload }) {
         </h1>
         <p>
           {performer
-            ? "Pick one. You’ll get five seconds to compose yourself."
+            ? "Pick whichever feels easiest. You’ll get five seconds to compose yourself."
             : "Get your ears ready. There’s no telling what’s coming."}
         </p>
         {performer ? (
@@ -340,10 +340,9 @@ export function Game({ state: s, me, session, host, act, action, upload }) {
                   key={p.id}
                   onClick={() => act("pick", { promptId: p.id })}
                 >
-                  <span>
-                    {p.difficulty === "hard"
-                      ? "A LITTLE WEIRD"
-                      : "EVERYDAY SOUND"}
+                  <span className={`diff diff-${p.difficulty}`}>
+                    <b>{(p.difficulty || "easy").toUpperCase()}</b>
+                    {p.category && <i> · {p.category}</i>}
                   </span>
                   <strong>{p.phrase}</strong>
                   <ArrowRight size={20} />

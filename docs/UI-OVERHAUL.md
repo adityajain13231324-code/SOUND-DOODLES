@@ -36,7 +36,7 @@ every theme at 390/768/1440 px. `scripts/play-review.mjs` plays Classic and Gart
 Shared: spacing `--s-1..8` (4/8/12/16/24/32/48/64 px), type `--fs-xs..hero` (fluid `clamp()`), layers `--z-*`, durations `--t1..t4`
 (120/200/320/520 ms times the theme's `--speed`), easings `--ease-out`, `--ease-spring`, `--ease-inout`, `--ease-ui` (per theme), `--stage-max` 1200px, `--gutter`.
 
-| Token                | Midnight Studio            | Neon Arcade                                       | Paper Playground                                                | Sunset Lounge                                            |
+| Token                | Midnight Studio            | Neon Arcade                                       | Paper Playground (default)                                      | Sunset Lounge                                            |
 | -------------------- | -------------------------- | ------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------- |
 | `--bg` / `--surface` | `#0e0e1b` / `#181829`      | `#060a1c` / `#0c1530`                             | `#f5eddb` / `#fffaf0`                                           | `#2a1238` / `#3c1f4d`                                    |
 | `--text` / `--muted` | `#f4efe6` / `#b6b3cc`      | `#eefaff` / `#a9c3e6`                             | `#25222b` / `#5b5460`                                           | `#fff1e0` / `#e6c8da`                                    |
