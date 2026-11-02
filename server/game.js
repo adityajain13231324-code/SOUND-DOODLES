@@ -1,6 +1,7 @@
 import { randomInt, randomUUID } from "node:crypto";
 import { prompts, matchPrompt } from "./prompts.js";
-import { MODES, AVATARS } from "../shared/modes.js";
+import { MODES } from "../shared/modes.js";
+import { formatLook, parseLook, randomLook, sizeOf } from "../shared/looks.js";
 import {
   WORD_SETTINGS,
   hasAdultPack,
@@ -81,17 +82,27 @@ export class Room {
     this.replay = 0;
     this.autoplay = false;
   }
-  // Honor a requested avatar only if nobody here has it, so friends never look identical.
+  // A face is a look string (shared/looks.js). Honor the requested one unless it is invalid or an exact copy of
+  // someone already here; with no usable choice, deal a random face whose body (shape and colour) is free.
   pickAvatar(requested) {
     const used = new Set(this.players.map((p) => p.avatar));
-    if (AVATARS.includes(requested) && !used.has(requested)) return requested;
-    const free = AVATARS.find((a) => !used.has(a));
-    return (
-      free ||
-      (AVATARS.includes(requested)
-        ? requested
-        : AVATARS[this.players.length % AVATARS.length])
+    const usedBodies = new Set(
+      this.players.map((p) => {
+        const l = parseLook(p.avatar);
+        return l && `${l.shape}.${l.color}`;
+      }),
     );
+    const rand = () => randomInt(1_000_000) / 1_000_000;
+    let look = parseLook(requested);
+    if (!look)
+      for (let i = 0; i < 40; i++) {
+        look = randomLook(rand);
+        if (!usedBodies.has(`${look.shape}.${look.color}`)) break;
+      }
+    const colors = sizeOf("color");
+    for (let i = 0; i < colors && used.has(formatLook(look)); i++)
+      look = { ...look, color: (look.color + 1) % colors };
+    return formatLook(look);
   }
   add({ name, avatar, spectator = false }) {
     requireThat(this.players.length < 12, "This room is full.");

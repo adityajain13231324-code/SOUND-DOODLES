@@ -1,7 +1,8 @@
 import React, { useRef, useState } from "react";
-import { ArrowRight, Shuffle } from "lucide-react";
-import { AVATARS } from "../../shared/modes.js";
-import { Avatar, Modal } from "../components.jsx";
+import { ArrowRight } from "lucide-react";
+import { formatLook, parseLook, randomLook } from "../../shared/looks.js";
+import { Modal } from "../components.jsx";
+import { FaceEditor } from "../ui/FaceEditor.jsx";
 import { Button } from "../ui/kit.jsx";
 import { sfx } from "../ui/sfx.js";
 
@@ -56,14 +57,12 @@ export function Entry({
   startMode = "",
 }) {
   const [name, setName] = useState(localStorage.getItem("sd-name") || ""),
-    [avatar, setAvatar] = useState(localStorage.getItem("sd-avatar") || ""),
+    [avatar, setAvatar] = useState(() => {
+      const saved = parseLook(localStorage.getItem("sd-avatar"));
+      return formatLook(saved || randomLook());
+    }),
     [roomCode, setCode] = useState(code),
     [spectator, setSpectator] = useState(false);
-  const shuffle = () => {
-    const pool = AVATARS.filter((a) => a !== avatar);
-    setAvatar(pool[Math.floor(Math.random() * pool.length)]);
-    sfx("pop");
-  };
   return (
     <Modal
       title={
@@ -74,8 +73,8 @@ export function Entry({
       onClose={onClose}
     >
       <p className="muted">
-        Pick a little face and a name your friends will recognize. Skip the face
-        and we’ll give you one nobody else has.
+        Build a face and pick a name your friends will recognize. Everyone in
+        the room gets a different look.
       </p>
       {type === "create" && startMode && (
         <p className="mode-hint">
@@ -86,44 +85,17 @@ export function Entry({
         onSubmit={async (e) => {
           e.preventDefault();
           localStorage.setItem("sd-name", name);
-          if (avatar) localStorage.setItem("sd-avatar", avatar);
+          localStorage.setItem("sd-avatar", avatar);
           await enter({
             create: type === "create",
             code: roomCode.toUpperCase().trim(),
             name,
-            avatar: avatar || undefined,
+            avatar,
             spectator,
           });
         }}
       >
-        <div className="shuffle-row">
-          <span>Your face</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<Shuffle size={16} />}
-            onClick={shuffle}
-          >
-            Surprise me
-          </Button>
-        </div>
-        <div className="avatar-picker">
-          {AVATARS.map((a) => (
-            <button
-              type="button"
-              key={a}
-              className={a === avatar ? "selected" : ""}
-              aria-label={`Choose ${a} avatar`}
-              aria-pressed={a === avatar}
-              onClick={() => {
-                setAvatar(a);
-                sfx("pop");
-              }}
-            >
-              <Avatar kind={a} size={49} animated={a === avatar} />
-            </button>
-          ))}
-        </div>
+        <FaceEditor value={avatar} onChange={setAvatar} />
         <label className="field">
           Your nickname
           <input

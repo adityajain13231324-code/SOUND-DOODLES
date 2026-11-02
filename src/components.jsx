@@ -12,6 +12,8 @@ import {
   X,
   ArrowRight,
 } from "lucide-react";
+import { parseLook, SHAPES, COLORS, LABELS } from "../shared/looks.js";
+import { EYES, MOUTHS, HATS, EXTRAS, HEAD_TOP } from "./ui/FaceParts.jsx";
 import {
   mic,
   record,
@@ -29,16 +31,9 @@ export function Avatar({
   reactive = false,
   style,
 }) {
-  const colors = {
-    blob: "var(--violet)",
-    star: "var(--gold)",
-    ghost: "var(--mint)",
-    cat: "var(--coral)",
-    robot: "var(--blue)",
-    frog: "var(--mint)",
-    cloud: "var(--blue)",
-    flower: "var(--coral)",
-  };
+  // `kind` is a look string ("cat.3.1.4.2.0") or, for older data, a plain shape name.
+  const look = parseLook(kind) || parseLook("blob");
+  const shape = SHAPES[look.shape];
   const shapes = {
     blob: (
       <path d="M14 47C8 24 20 9 38 12C51 4 69 20 66 35C79 52 62 72 46 68C27 79 10 65 14 47Z" />
@@ -74,17 +69,15 @@ export function Avatar({
     <svg
       width={size}
       height={size}
-      viewBox="0 0 80 80"
+      viewBox="-4 -12 88 92"
       className={`avatar ${animated ? "animated" : ""} ${reactive ? "reactive" : ""} ${className}`}
       style={style}
       role="img"
-      aria-label={`${kind} avatar`}
+      aria-label={`${LABELS.shape[look.shape]} avatar`}
     >
-      <g fill={colors[kind] || colors.blob}>{shapes[kind] || shapes.blob}</g>
-      <g fill="#222231" className="eyes">
-        <ellipse cx="30" cy="40" rx="3" ry="5" />
-        <ellipse cx="50" cy="40" rx="3" ry="5" />
-      </g>
+      <g fill={COLORS[look.color]}>{shapes[shape]}</g>
+      <g className="eyes">{EYES[look.eyes]}</g>
+      <g className="mouth">{MOUTHS[look.mouth]}</g>
       <ellipse
         className="mouth-open"
         cx="40"
@@ -93,13 +86,10 @@ export function Avatar({
         ry="5"
         fill="#222231"
       />
-      <path
-        d="M34 51q6 6 12 0"
-        fill="none"
-        stroke="#222231"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
+      {EXTRAS[look.extra]}
+      {HATS[look.hat] && (
+        <g transform={`translate(40 ${HEAD_TOP[shape]})`}>{HATS[look.hat]}</g>
+      )}
     </svg>
   );
 }

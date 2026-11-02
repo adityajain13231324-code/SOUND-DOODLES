@@ -1,10 +1,21 @@
 import React from "react";
 import { ArrowRight, Headphones, Mic, Plus, Users } from "lucide-react";
-import { AVATARS, MODES } from "../../shared/modes.js";
+import { MODES } from "../../shared/modes.js";
 import { Avatar } from "../components.jsx";
 import { Poster } from "../ui/Poster.jsx";
 import { Button } from "../ui/kit.jsx";
 
+// Faces for the floating cast: a spread of bodies, colours, hats and expressions.
+const CAST_LOOKS = [
+  "blob.0.1.0.4.0",
+  "cloud.4.2.1.0.2",
+  "ghost.2.5.3.0.0",
+  "robot.4.8.2.12.0",
+  "flower.5.4.6.0.1",
+  "frog.6.0.5.3.3",
+  "cat.3.6.7.8.0",
+  "star.1.9.1.2.0",
+];
 // Where the floating cast drifts behind the headline.
 const CAST = [
   ["3%", "6%", "-10deg", "7s"],
@@ -37,7 +48,7 @@ export function Landing({ onCreate, onJoin, onHelp }) {
           {CAST.map(([x, y, r, d], i) => (
             <Avatar
               key={i}
-              kind={AVATARS[i % AVATARS.length]}
+              kind={CAST_LOOKS[i % CAST_LOOKS.length]}
               size={i % 3 === 0 ? 86 : 64}
               animated
               style={{

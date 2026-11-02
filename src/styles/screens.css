@@ -1128,68 +1128,12 @@ main {
   color: var(--muted);
 }
 
-/* ---------- Entry: segmented room code, avatar picker ---------- */
+/* ---------- Entry: segmented room code ---------- */
 .code-boxes {
   display: flex;
   gap: var(--s-2);
   justify-content: center;
 }
-.code-boxes input {
-  width: clamp(40px, 12vw, 54px);
-  height: 64px;
-  padding: 0;
-  text-align: center;
-  font: 800 1.8rem var(--display);
-  text-transform: uppercase;
-  color: var(--accent);
-  background: var(--surface-2);
-  border: var(--border-w) solid var(--card-border);
-  border-radius: var(--r-sm);
-  transition:
-    border-color var(--t2),
-    translate var(--t2) var(--ease-spring);
-}
-.code-boxes input:focus {
-  border-color: var(--accent);
-  translate: 0 -3px;
-}
-.code-boxes input.filled {
-  animation: tile-in var(--t3) var(--ease-spring);
-}
-.avatar-picker {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--s-2);
-}
-.avatar-picker button {
-  display: grid;
-  place-items: center;
-  min-height: 64px;
-  background: var(--surface-2);
-  border: var(--border-w) solid var(--line);
-  border-radius: var(--r-md);
-  cursor: pointer;
-  transition:
-    translate var(--t2) var(--ease-spring),
-    border-color var(--t2);
-}
-.avatar-picker button:hover {
-  translate: 0 -3px;
-}
-.avatar-picker button.selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-.shuffle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-3);
-  margin-bottom: var(--s-2);
-  font-size: var(--fs-sm);
-  color: var(--muted);
-}
-
 /* Room code: decorative boxes under a real input */
 .code-field {
   display: grid;
@@ -1313,4 +1257,97 @@ main {
 .land-modes-head .btn {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/* Face editor on the join screen */
+.face-editor {
+  display: grid;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+@media (min-width: 560px) {
+  .face-editor {
+    grid-template-columns: 170px 1fr;
+    align-items: stretch;
+  }
+}
+.face-stage {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--s-2);
+  padding: var(--s-4) var(--s-3);
+  background: radial-gradient(
+    90% 90% at 50% 40%,
+    color-mix(in srgb, var(--accent) 20%, transparent),
+    transparent 75%
+  );
+  border: var(--border-w) dashed var(--line);
+  border-radius: var(--r-lg);
+}
+.face-controls {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.face-colors {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.face-colors button {
+  aspect-ratio: 1;
+  min-height: 30px;
+  background: var(--swatch);
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    translate var(--t2) var(--ease-spring),
+    box-shadow var(--t2);
+}
+.face-colors button:hover {
+  translate: 0 -2px;
+}
+.face-colors button.on {
+  border-color: var(--text);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.face-row {
+  display: grid;
+  grid-template-columns: 52px 36px 1fr 36px;
+  align-items: center;
+  gap: 6px;
+}
+.face-label {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.face-row button {
+  display: grid;
+  place-items: center;
+  min-height: 36px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: var(--border-w) solid var(--line);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition:
+    translate var(--t2) var(--ease-spring),
+    border-color var(--t2);
+}
+.face-row button:hover {
+  translate: 0 -2px;
+  border-color: var(--accent);
+}
+.face-row button:active {
+  translate: 0 1px;
+}
+.face-value {
+  text-align: center;
+  font-size: var(--fs-sm);
+  font-weight: 600;
 }
