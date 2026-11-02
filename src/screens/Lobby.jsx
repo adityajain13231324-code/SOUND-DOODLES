@@ -94,9 +94,7 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
   const canStart =
     active.length >= mode.min &&
     active.every((p) => p.ready) &&
-    (state.settings.mode === "classic"
-      ? active.some((p) => p.mic)
-      : active.every((p) => p.mic));
+    (state.settings.mode === "classic" || active.every((p) => p.mic));
   const change = (patch) =>
     act("settings", { settings: { ...state.settings, ...patch } });
   const waiting = active.length - readyCount;
@@ -107,7 +105,7 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
       : waiting > 0
         ? `Waiting for ${waiting} friend${waiting === 1 ? "" : "s"} to ready up.`
         : !canStart
-          ? "Check microphones or switch to spectator. Classic allows guessers without a mic."
+          ? "Check microphones or switch to spectator."
           : host
             ? "Everyone’s here. The mic is yours."
             : "All set. Waiting for the host to start.";
@@ -148,7 +146,7 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
                     ? "Spectating"
                     : state.settings.mode === "classic" && !p.mic
                       ? p.ready
-                        ? "Ready · guessing only"
+                        ? "Ready · mic on their turn"
                         : "No mic check yet"
                       : p.ready
                         ? "Ready to make noise"
@@ -347,8 +345,8 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
                 .map((p) => p.name)
                 .join(", ")}{" "}
               {active.filter((p) => !p.mic).length === 1 ? "hasn’t" : "haven’t"}{" "}
-              done a mic check, so they can only guess and won’t get a turn on
-              the mic.
+              done a mic check yet. Everyone takes a turn, so they’ll be asked
+              to allow their mic when it’s theirs.
             </p>
           )}
       </section>

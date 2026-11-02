@@ -15,7 +15,7 @@
 ## Where things live
 
 - `server/words.js`: the packs, `cleanStartingWord()` (the one-or-two-word rule), `wordsFor()`, `libraryOverview()`.
-- `server/game.js`: `wordPack` room setting, `drawWord()` (no repeats until a pack is used up), `shuffleSeed` event, seed-phase validation.
+- `server/game.js`: `wordPacks` room setting (a list of packs to mix), `drawWord()` (no repeats until a pack is used up), `shuffleSeed` event, seed-phase validation.
 - `GET /api/words/library`: pack names, sizes and random samples only.
 - `src/ui/RoomSettings.jsx`, `src/ui/WordLibrary.jsx`, `src/screens/SeedScreen.jsx`, `src/styles/words.css`.
 
@@ -39,17 +39,29 @@ Unit: library integrity, the word rule, own-word seed phase, pack draws, shuffle
 
 - The performer is dealt **3, 4 or 5 words** (host setting, default 4), **easiest first**, each tagged EASY, MEDIUM or HARD with its category.
 - Classic only deals **one- or two-word** prompts. Scenes and sentences ("Dog chasing a bouncing ball") are never dealt in Classic.
-- Words come from the room's pack: "Everything" blends the sound ideas (about 40%) with the family-friendly library, "Sound ideas" uses only the curated list,
-  and any other pack deals only from that pack. Library words are guessed by their name; famous people and characters also accept the surname or character name alone.
+- Words come from the room's **packs** (one or several, see below): "Everything" blends the sound ideas (about 40%) with the family-friendly library, "Sound ideas"
+  uses only the curated list, and any other pack deals only from the packs you chose. Every chosen pack is equally likely, so a small pack still shows up in a mix. Library words are guessed by their name; famous people and characters also accept the surname or character name alone.
 - Hints for library words are the category, then the letter count.
 
 ## Spicy pack (18+)
 
-- A 117-word pack of flirty, cheeky and mildly naughty words for adult groups. It is suggestive and never explicit.
+- An 80-word pack of **sounds you can actually perform** for adult groups: moaning, heavy breathing, slurping, smooches, lip smacks, creaky mattresses, wolf whistles and
+  other cheeky noises. It is suggestive and never explicit.
 - **Opt-in only.** It is never part of "Everything". The host must pick it in the word library and confirm "We're all adults"; the server refuses the pack without
   that confirmation. Every player sees a "Spicy words are on" banner in the lobby, and switching to another pack turns it off.
 - The library never previews its words, so opening the browser cannot surprise anyone.
 - Works for both Classic and Gartic Sounds.
+
+## Mixing packs
+
+In the word library the host taps packs to build a mix: "Everything" is a preset, the first pack tapped narrows it to that pack, and further taps add ("Add to the mix") or
+remove ("In the mix · remove") packs. At least one pack always stays selected. The 18+ confirmation is needed whenever Spicy joins a mix, and the banner shows for
+everyone while it is in.
+
+## Turns in Classic
+
+Like Skribbl, everyone takes turns on the mic. A player who skipped the mic check still gets turns: their browser asks for the microphone while they choose a word.
+Small rooms play at least four rounds (two friends get two turns each).
 
 ## Microphone list
 

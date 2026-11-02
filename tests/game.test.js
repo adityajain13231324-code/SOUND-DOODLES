@@ -78,9 +78,14 @@ test("minimum players, readiness, mic requirements and role permissions", () => 
   assert.throws(() => f.room.start(), /ready/);
   const g = fixture();
   assert.throws(() => g.send(g.players[1].id, "start"), /host/);
+  // Classic: a missing mic check does not block the match or a turn; the player is asked for the mic on their turn.
   g.players[0].mic = false;
   g.room.start();
-  assert.ok(!g.room.performerIds.includes(g.players[0].id));
+  assert.equal(g.room.phase, "choose");
+  // Other modes still need everyone's mic check.
+  const d = fixture("duo", 4);
+  d.players[0].mic = false;
+  assert.throws(() => d.room.start(), /microphones/);
 });
 test("classic completes, hides choices, keeps matching private and prevents duplicate points", () => {
   const f = fixture();
@@ -529,7 +534,7 @@ test("word packs: draws stay inside the chosen pack and shuffle is limited to th
   f.room.settings = {
     ...f.room.settings,
     customPrompts: true,
-    wordPack: "animals",
+    wordPacks: ["animals"],
   };
   f.room.start();
   const animals = new Set(wordsFor("animals"));
@@ -543,25 +548,30 @@ test("word packs: draws stay inside the chosen pack and shuffle is limited to th
   assert.equal(f.room.view(first).seedShuffles, 0);
   assert.throws(() => f.send(first, "shuffleSeed"), /No more shuffles/);
   assert.throws(
-    () => f.send(f.room.ids[1], "settings", { settings: {} }),
+    () =>
+      f.send(
+        f.room.ids.find((id) => id !== f.room.host),
+        "settings",
+        { settings: {} },
+      ),
     /host/,
   );
   const lobby = fixture("gartic", 3);
   assert.throws(
     () =>
       lobby.send(lobby.room.host, "settings", {
-        settings: { ...lobby.room.settings, wordPack: "nope" },
+        settings: { ...lobby.room.settings, wordPacks: ["nope"] },
       }),
     /word pack/,
   );
   lobby.send(lobby.room.host, "settings", {
-    settings: { ...lobby.room.settings, wordPack: "food" },
+    settings: { ...lobby.room.settings, wordPacks: ["food"] },
   });
-  assert.equal(lobby.room.settings.wordPack, "food");
+  assert.deepEqual(lobby.room.settings.wordPacks, ["food"]);
 });
 test("a pack never repeats a word until it is used up", () => {
   const f = fixture("gartic", 8);
-  f.room.settings = { ...f.room.settings, wordPack: "vehicles" };
+  f.room.settings = { ...f.room.settings, wordPacks: ["vehicles"] };
   const drawn = Array.from({ length: 40 }, () => f.room.drawWord());
   assert.equal(new Set(drawn).size, 40);
 });
@@ -573,23 +583,23 @@ test("spicy pack is opt-in: needs the 18+ confirmation, stays out of Everything 
   assert.throws(
     () =>
       f.send(f.room.host, "settings", {
-        settings: { ...base, wordPack: "spicy" },
+        settings: { ...base, wordPacks: ["spicy"] },
       }),
     /18\+/,
   );
   assert.throws(
     () =>
       f.send(f.room.host, "settings", {
-        settings: { ...base, wordPack: "spicy", adultsOnly: "yes" },
+        settings: { ...base, wordPacks: ["spicy"], adultsOnly: "yes" },
       }),
     /18\+/,
   );
   f.send(f.room.host, "settings", {
-    settings: { ...base, wordPack: "spicy", adultsOnly: true },
+    settings: { ...base, wordPacks: ["spicy"], adultsOnly: true },
   });
   assert.equal(f.room.settings.adultsOnly, true);
   f.send(f.room.host, "settings", {
-    settings: { ...base, wordPack: "food", adultsOnly: true },
+    settings: { ...base, wordPacks: ["food"], adultsOnly: true },
   });
   assert.equal(
     f.room.settings.adultsOnly,
@@ -632,7 +642,7 @@ test("Classic deals 3, 4 or 5 words to pick from, easiest first, all distinct", 
 test("Classic draws from the chosen pack, matches library guesses and keeps spicy out of Everything", async () => {
   const { wordsFor } = await import("../server/words.js");
   const f = fixture("classic", 3);
-  f.room.settings = { ...f.room.settings, wordPack: "animals", choices: 5 };
+  f.room.settings = { ...f.room.settings, wordPacks: ["animals"], choices: 5 };
   const animals = new Set(wordsFor("animals"));
   f.room.start();
   assert.ok(f.room.choices.every((p) => animals.has(p.phrase)));
@@ -646,7 +656,7 @@ test("Classic draws from the chosen pack, matches library guesses and keeps spic
 
   // famous names can be guessed by surname
   const g = fixture("classic", 3);
-  g.room.settings = { ...g.room.settings, wordPack: "people" };
+  g.room.settings = { ...g.room.settings, wordPacks: ["people"] };
   g.room.start();
   const person =
     g.room.choices.find((p) => p.phrase.includes(" ")) || g.room.choices[0];
@@ -659,7 +669,11 @@ test("Classic draws from the chosen pack, matches library guesses and keeps spic
   // "Everything" never deals a spicy word
   const spicyWords = new Set(wordsFor("spicy"));
   const all = fixture("classic", 3);
-  all.room.settings = { ...all.room.settings, wordPack: "mixed", choices: 5 };
+  all.room.settings = {
+    ...all.room.settings,
+    wordPacks: ["mixed"],
+    choices: 5,
+  };
   for (let i = 0; i < 60; i++)
     assert.ok(all.room.drawChoices().every((p) => !spicyWords.has(p.phrase)));
 });
@@ -671,9 +685,13 @@ test("Classic only deals one- or two-word prompts, never scenes or sentences", a
       p.modes.includes("classic") && p.phrase.trim().split(/\s+/).length <= 2,
   );
   assert.ok(short.length >= 100, "enough short sound ideas to deal from");
-  for (const wordPack of ["sounds", "mixed", "animals", "people"]) {
+  for (const wordPack of ["sounds", "mixed", "animals", "people", "spicy"]) {
     const f = fixture("classic", 3);
-    f.room.settings = { ...f.room.settings, wordPack, choices: 5 };
+    f.room.settings = {
+      ...f.room.settings,
+      wordPacks: [wordPack],
+      choices: 5,
+    };
     for (let i = 0; i < 80; i++)
       for (const p of f.room.drawChoices())
         assert.ok(
@@ -682,7 +700,7 @@ test("Classic only deals one- or two-word prompts, never scenes or sentences", a
         );
   }
 });
-test("small Classic rooms always play at least four rounds, even if only one player checked a mic", () => {
+test("small Classic rooms always play at least four rounds, whoever checked a mic", () => {
   const rounds = (n, micCount) => {
     const f = fixture("classic", n);
     f.players.forEach((p, i) => (p.mic = i < micCount));
@@ -691,7 +709,7 @@ test("small Classic rooms always play at least four rounds, even if only one pla
     return f.room.totalRounds;
   };
   assert.equal(rounds(2, 2), 4); // each of two friends performs twice
-  assert.equal(rounds(2, 1), 4); // one performer: still a real game, not a single round
+  assert.equal(rounds(2, 1), 4); // still a real game, not a single round
   assert.equal(rounds(3, 3), 6);
   assert.equal(rounds(4, 4), 4);
   // both friends really get turns on the mic
@@ -708,4 +726,94 @@ test("small Classic rooms always play at least four rounds, even if only one pla
     f.send(f.room.host, "next");
   }
   assert.equal(performers.size, 2);
+});
+
+test("Classic: everyone takes turns on the mic, even players who skipped the mic check", () => {
+  for (const n of [2, 3, 5]) {
+    const f = fixture("classic", n);
+    f.players.forEach((p, i) => (p.mic = i === 0)); // only one player did a mic check
+    f.room.start();
+    const turns = {};
+    while (f.room.phase !== "results") {
+      const performer = f.room.performerIds[0];
+      turns[performer] = (turns[performer] || 0) + 1;
+      f.send(performer, "pick", { promptId: f.room.choices[0].id });
+      f.expire();
+      for (const id of [...f.room.eligible])
+        f.send(id, "guess", { text: f.room.prompt.phrase });
+      f.send(f.room.host, "next");
+    }
+    assert.equal(Object.keys(turns).length, n, `${n} players all perform`);
+    const counts = Object.values(turns);
+    assert.ok(Math.max(...counts) - Math.min(...counts) <= 0, "equal turns");
+  }
+});
+test("Classic can start with nobody having done a mic check", () => {
+  const f = fixture("classic", 3);
+  f.players.forEach((p) => (p.mic = false));
+  f.room.start();
+  assert.equal(f.room.phase, "choose");
+});
+test("several packs can be mixed: draws stay inside them, spicy needs the 18+ flag", async () => {
+  const { wordsFor, hasAdultPack } = await import("../server/words.js");
+  const f = fixture("classic", 3);
+  const base = { ...f.room.settings };
+  f.send(f.room.host, "settings", {
+    settings: { ...base, wordPacks: ["animals", "food", "vehicles"] },
+  });
+  assert.deepEqual(f.room.settings.wordPacks, ["animals", "food", "vehicles"]);
+  const allowed = new Set([
+    ...wordsFor("animals"),
+    ...wordsFor("food"),
+    ...wordsFor("vehicles"),
+  ]);
+  const seenPacks = new Set();
+  for (let i = 0; i < 80; i++)
+    for (const p of f.room.drawChoices(5)) {
+      assert.ok(allowed.has(p.phrase), p.phrase);
+      seenPacks.add(p.category);
+    }
+  assert.equal(seenPacks.size, 3, "every chosen pack shows up");
+  assert.throws(
+    () =>
+      f.send(f.room.host, "settings", {
+        settings: { ...base, wordPacks: ["animals", "spicy"] },
+      }),
+    /18\+/,
+  );
+  f.send(f.room.host, "settings", {
+    settings: { ...base, wordPacks: ["animals", "spicy"], adultsOnly: true },
+  });
+  assert.equal(f.room.settings.adultsOnly, true);
+  assert.ok(hasAdultPack(f.room.settings.wordPacks));
+  assert.throws(
+    () =>
+      f.send(f.room.host, "settings", {
+        settings: { ...base, wordPacks: [] },
+      }),
+    /at least one/,
+  );
+  assert.throws(
+    () =>
+      f.send(f.room.host, "settings", {
+        settings: { ...base, wordPacks: ["animals", "nope"] },
+      }),
+    /at least one/,
+  );
+  f.send(f.room.host, "settings", {
+    settings: { ...base, wordPacks: ["sounds", "animals"] },
+  });
+  const phrases = new Set();
+  for (let i = 0; i < 60; i++)
+    for (const p of f.room.drawChoices(5)) phrases.add(p.id.startsWith("lib:"));
+  assert.equal(phrases.size, 2, "sound ideas and the animals pack both appear");
+});
+test("the spicy pack is made of sounds you can actually perform", async () => {
+  const { WORD_PACKS } = await import("../server/words.js");
+  const spicy = WORD_PACKS.find((p) => p.id === "spicy").words.map((w) =>
+    w.toLowerCase(),
+  );
+  for (const w of ["moaning", "slurping", "heavy breathing", "kissing noises"])
+    assert.ok(spicy.includes(w), w);
+  assert.ok(!spicy.includes("rizz") && !spicy.includes("situationship"));
 });

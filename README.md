@@ -23,9 +23,9 @@ npm run build && npm start
 ## Test it
 
 ```bash
-npm test                 # 41 unit and socket tests
+npm test                 # 45 unit and socket tests
 npx playwright install chromium   # first time only (tests use the Chrome channel)
-npm run test:browser     # 16 browser tests: four sessions per mode, simulated microphones
+npm run test:browser     # 17 browser tests: four sessions per mode, simulated microphones
 node scripts/shots.mjs   # screenshots of every theme at 390, 768 and 1440 px into shots/
 npm run dev              # then open /styleguide (or #/styleguide) to see every component in all four themes
 ```
@@ -36,7 +36,7 @@ npm run dev              # then open /styleguide (or #/styleguide) to see every 
 - **Announcer lines:** optional and sparse ("Your turn", "Time to guess", "Let's hear what happened"). The three mp3 files are included (generated with ElevenLabs, stock voice).
   To generate them with ElevenLabs (costs credits, run once, then listen and commit the files):
   `ELEVENLABS_API_KEY=... node scripts/generate-announcer.mjs` (a stock voice is picked for you)``. Use a stock or designed voice, never a cloned player voice.
-- **Word library:** 1,399 family-friendly one-or-two-word words in 15 packs plus an opt-in 18+ Spicy pack, an own-word mode for Gartic, and Skribbl-style word choices in Classic. See [docs/WORD-LIBRARY.md](docs/WORD-LIBRARY.md).
+- **Word library:** 1,399 family-friendly one-or-two-word words in 15 packs plus an opt-in 18+ Spicy pack of sounds you can perform (moans, slurps, smooches), packs you can mix,  an own-word mode for Gartic, and Skribbl-style word choices in Classic. See [docs/WORD-LIBRARY.md](docs/WORD-LIBRARY.md).
 - **Gartic awards:** the host can enable a friendly awards vote after the reveal (funniest transformation, best sound, most unexpected, most accurate).
 
 ## Configuration

@@ -128,9 +128,9 @@ export const WORD_PACKS = [
   pack(
     "spicy",
     "Spicy",
-    "Flirty, cheeky and a little naughty. 18+ groups only.",
+    "Moans, slurps, smooches and heavy breathing. Cheeky, never explicit. 18+ only.",
     "flame",
-    `Wink,Kiss,French Kiss,Blow Kiss,Love Bite,Hickey,Cuddle,Snuggle,Spooning,Slow Dance,Last Dance,Pillow Talk,Pickup Line,Sweet Talk,Heart Eyes,Butterflies,Crush,First Date,Blind Date,Speed Dating,Dating App,Swipe Right,Situationship,Rizz,Love Letter,Valentine,Candlelight Dinner,Rose Petals,Bubble Bath,Hot Tub,Jacuzzi,Champagne Toast,Slow Jam,Lipstick,Cologne,High Heels,Lingerie,Silk Robe,Bikini,Speedo,Six Pack,Shirtless,Booty Call,Walk-Of-Shame,Morning After,One-Night Stand,Strip Poker,Striptease,Pole Dance,Lap Dance,Twerk,Belly Dance,Salsa,Tango,Back Rub,Massage,Skinny Dipping,Sauna,Nightclub,Cocktail,Tequila Shots,Hangover,Drunk Text,Spin-The-Bottle,Truth-Or-Dare,Love Triangle,Jealous Ex,Ex Texting,Ghosting,Catfish,Red Flag,Green Flag,Third Wheel,Wingman,Cuffing Season,Honeymoon,Wedding Night,Bachelorette,Bachelor Party,Moan,Purr,Heavy Breathing,Sultry Voice,Seductive Laugh,Groan,Bedroom Eyes,Eyebrow Raise,Hair Flip,Booty Shake,Flex,Mistletoe,Cupid,Casanova,Romeo,Juliet,Don Juan,Femme Fatale,Heartbreaker,Sugar Daddy,Gold Digger,Hot Mess,Thirst Trap,Simp,Just Friends,Slow Burn,Chemistry,Eye Contact,Love Handles,Beer Goggles,Midnight Snack,Netflix-And-Chill,Gym Crush,Mixtape,Oil Massage,Hot Sauce,Whipped Cream,Cherry,Peach Emoji,Eggplant Emoji`,
+    `Moaning,Dramatic Moan,Fake Moan,Pleasure Moan,Heavy Breathing,Panting,Gasping,Sultry Whisper,Seductive Laugh,Flirty Giggle,Purring,Growling,Relieved Sigh,Dreamy Sigh,Swooning,Kissing Noises,Loud Smooch,Sloppy Kiss,Lip Smack,Air Kiss,Wolf Whistle,Cat Call,Slurping,Noodle Slurp,Milkshake Slurp,Sucking Straw,Lollipop Lick,Ice-Cream Lick,Whipped Cream,Squeaky Bed,Creaky Mattress,Bedsprings,Headboard Thump,Thin Walls,Neighbour Noises,Bubble Bath,Shower Steam,Hot Tub,Zipper Down,Belt Buckle,Bra Snap,Velcro Rip,Satin Sheets,Champagne Pop,Cork Pop,Pillow Talk,Sweet Nothings,Pickup Line,Bedroom Voice,Sexy Voice,Barry White,Smooth Jazz,Slow Jam,Heart Pounding,Butterflies,Blushing,Love Bite,Slap Sound,Whip Crack,Handcuff Click,Naughty Giggle,Guilty Giggle,Caught Red-Handed,Walk-Of-Shame,Morning After,Hangover Groan,Drunk Singing,Drunk Hiccups,Tequila Shot,Lap Dance,Striptease Music,Pole Dance,Booty Shake,Twerking,Cheeky Wink,Raised Eyebrow,Sultry Growl,Romantic Whisper,Wedding Night,Honeymoon Suite`,
     true,
   ),
 ];
@@ -147,24 +147,41 @@ export const ADULT_PACK_IDS = WORD_PACKS.filter((p) => p.adult).map(
   (p) => p.id,
 );
 
-/** Valid values for the "wordPack" room setting. "sounds" is the original sound-idea list, "mixed" is the whole library. */
+/** Valid ids for the "wordPacks" room setting. "sounds" is the original sound-idea list, "mixed" is sound ideas plus every family-friendly pack. */
 export const WORD_SETTINGS = ["sounds", "mixed", ...PACK_IDS];
+const FAMILY_IDS = WORD_PACKS.filter((p) => !p.adult).map((p) => p.id);
 
-/** Every library entry for a setting (family-friendly packs for "mixed"), keeping track of its pack. */
-export function libraryEntries(setting) {
-  const packs =
-    setting === "mixed"
-      ? WORD_PACKS.filter((p) => !p.adult)
-      : WORD_PACKS.filter((p) => p.id === setting);
-  return packs.flatMap((p) => p.words.map((word) => ({ word, packId: p.id })));
+/** Turns a selection (one id or a list of ids) into { sounds, packIds }: "mixed" expands to sound ideas plus the family packs. */
+export function resolvePacks(selection) {
+  const list = Array.isArray(selection) ? selection : [selection];
+  const ids = new Set();
+  let sounds = false;
+  for (const id of list) {
+    if (id === "mixed") {
+      sounds = true;
+      FAMILY_IDS.forEach((f) => ids.add(f));
+    } else if (id === "sounds") sounds = true;
+    else if (byId[id]) ids.add(id);
+  }
+  return { sounds, packIds: [...ids] };
 }
 
-/** Words for a setting. "sounds" returns null so the caller uses the curated sound prompts. */
-export function wordsFor(setting) {
-  if (setting === "sounds") return null;
-  if (setting === "mixed")
-    return WORD_PACKS.filter((p) => !p.adult).flatMap((p) => p.words);
-  return byId[setting]?.words || null;
+/** True when a selection includes an 18+ pack. */
+export function hasAdultPack(selection) {
+  return resolvePacks(selection).packIds.some((id) => byId[id].adult);
+}
+
+/** Every library entry for a selection, keeping track of its pack. */
+export function libraryEntries(selection) {
+  return resolvePacks(selection).packIds.flatMap((id) =>
+    byId[id].words.map((word) => ({ word, packId: id })),
+  );
+}
+
+/** Words for a selection. Only sound ideas selected returns null, so the caller uses the curated sound prompts. */
+export function wordsFor(selection) {
+  const { packIds } = resolvePacks(selection);
+  return packIds.length ? packIds.flatMap((id) => byId[id].words) : null;
 }
 
 /** A starting word is one or two words, never a sentence. Returns the cleaned word or null. */

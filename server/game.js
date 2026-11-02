@@ -3,6 +3,8 @@ import { prompts, matchPrompt } from "./prompts.js";
 import { MODES, AVATARS } from "../shared/modes.js";
 import {
   WORD_SETTINGS,
+  hasAdultPack,
+  resolvePacks,
   wordsFor,
   cleanStartingWord,
   libraryEntries,
@@ -66,7 +68,7 @@ export class Room {
       performanceSeconds: 40,
       customPrompts: false,
       awards: false,
-      wordPack: "mixed",
+      wordPacks: ["mixed"],
       choices: 4,
       adultsOnly: false,
       shuffles: 1,
@@ -138,20 +140,21 @@ export class Room {
    * "sounds" uses the curated sound ideas, a pack id uses that pack, "mixed" blends sound ideas with the family-friendly library.
    */
   drawChoices(count = this.settings.choices || 4) {
-    const setting = this.settings.wordPack || "mixed";
+    const selection = this.settings.wordPacks;
+    const { sounds, packIds } = resolvePacks(selection);
     const level = this.settings.difficulty;
     const fits = (p) =>
       level === "mixed" ||
       (level === "easy" ? p.difficulty === "easy" : p.difficulty !== "easy");
-    const curated =
-      setting === "sounds" || setting === "mixed"
-        ? prompts.filter(
-            (p) =>
-              p.modes.includes("classic") &&
-              p.phrase.trim().split(/\s+/).length <= 2,
-          )
-        : [];
-    const entries = setting === "sounds" ? [] : libraryEntries(setting);
+    const curated = sounds
+      ? prompts.filter(
+          (p) =>
+            p.modes.includes("classic") &&
+            p.phrase.trim().split(/\s+/).length <= 2,
+        )
+      : [];
+    // Every chosen pack is equally likely, so a small pack still shows up when mixed with big ones.
+    const entries = packIds.map((id) => libraryEntries(id));
     const wantedOrder = ["easy", "easy", "medium", "hard", "medium"];
     const chosen = [];
     const taken = new Set();
@@ -162,7 +165,8 @@ export class Room {
         const p = fromCurated
           ? curated[randomInt(curated.length)]
           : (() => {
-              const e = entries[randomInt(entries.length)];
+              const list = entries[randomInt(entries.length)];
+              const e = list[randomInt(list.length)];
               return libraryPrompt(e.word, e.packId);
             })();
         if (taken.has(p.id) || this.recent.includes(p.id)) continue;
@@ -191,7 +195,7 @@ export class Room {
   }
   /** A starting word for Gartic: from the chosen library pack, never repeated within the recent past. */
   drawWord() {
-    const words = wordsFor(this.settings.wordPack || "mixed");
+    const words = wordsFor(this.settings.wordPacks);
     if (!words) return this.draw().phrase;
     this.recentWords ||= [];
     let pool = words.filter((w) => !this.recentWords.includes(w));
@@ -242,10 +246,8 @@ export class Room {
       "Everyone needs to be ready.",
     );
     requireThat(
-      mode === "classic"
-        ? active.filter((p) => p.mic).length >= 1
-        : active.every((p) => p.mic),
-      "Check your microphones first, or choose spectator. Classic also allows guessers without a microphone.",
+      mode === "classic" || active.every((p) => p.mic),
+      "Check your microphones first, or choose spectator.",
     );
     this.ids = shuffle(active.map((p) => p.id));
     this.players.forEach((p) => (p.score = 0));
@@ -277,9 +279,10 @@ export class Room {
       if (this.settings.customPrompts) this.setPhase("seed", 30);
       else this.beginTask();
     } else {
-      // Classic: everyone with a checked mic takes turns on it. Small rooms always play at least four rounds,
-      // so two friends do not get a one-round game.
-      const performers = this.ids.filter((id) => this.player(id).mic).length;
+      // Classic, like Skribbl: everyone takes turns on the mic (a player who skipped the mic check is asked for
+      // it when their turn comes). Small rooms always play at least four rounds, so two friends do not get a
+      // one-round game.
+      const performers = this.ids.length;
       this.totalRounds =
         mode === "classic"
           ? performers *
@@ -308,8 +311,7 @@ export class Room {
     this.entries = [];
     const mode = this.settings.mode;
     if (mode === "classic") {
-      const performers = this.ids.filter((id) => this.player(id)?.mic);
-      this.performerIds = [performers[this.round % performers.length]];
+      this.performerIds = [this.ids[this.round % this.ids.length]];
       this.eligible = this.ids.filter((id) => !this.performerIds.includes(id));
       this.choices = this.drawChoices();
       this.setPhase("choose", this.settings.chooseSeconds);
@@ -399,12 +401,17 @@ export class Room {
         s && MODES[s.mode] && ["mixed", "easy", "hard"].includes(s.difficulty),
         "Choose valid room settings.",
       );
+      // Older clients send a single "wordPack"; newer ones send a list of packs to mix.
+      const packs = s.wordPacks ?? (s.wordPack ? [s.wordPack] : ["mixed"]);
       requireThat(
-        s.wordPack === undefined || WORD_SETTINGS.includes(s.wordPack),
-        "Choose a word pack from the library.",
+        Array.isArray(packs) &&
+          packs.length >= 1 &&
+          packs.length <= WORD_SETTINGS.length &&
+          packs.every((id) => WORD_SETTINGS.includes(id)),
+        "Choose at least one word pack from the library.",
       );
       requireThat(
-        s.wordPack !== "spicy" || s.adultsOnly === true,
+        !hasAdultPack(packs) || s.adultsOnly === true,
         "The spicy pack needs the 18+ confirmation.",
       );
       requireThat(
@@ -433,9 +440,9 @@ export class Room {
         performanceSeconds: s.performanceSeconds,
         customPrompts: !!s.customPrompts,
         awards: !!s.awards,
-        wordPack: s.wordPack ?? "mixed",
+        wordPacks: [...new Set(packs)],
         choices: s.choices ?? 4,
-        adultsOnly: s.wordPack === "spicy" && s.adultsOnly === true,
+        adultsOnly: hasAdultPack(packs) && s.adultsOnly === true,
         shuffles: s.shuffles ?? 1,
         chooseSeconds: s.chooseSeconds ?? 20,
         recordSeconds: s.recordSeconds ?? 35,
