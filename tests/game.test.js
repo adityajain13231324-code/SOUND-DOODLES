@@ -404,13 +404,49 @@ test("Gartic without awards goes straight to results", () => {
   while (f.room.phase === "chainReveal") f.send(f.room.host, "next");
   assert.equal(f.room.phase, "results");
 });
-test("players get distinct avatars; a taken choice falls back to a free one", () => {
+test("faces: a valid look is kept, an exact copy is nudged, junk gets a random free face", async () => {
+  const { parseLook, formatLook, randomLook, sizeOf } =
+    await import("../shared/looks.js");
   const room = new Room("AVATAR", { now: () => 1 });
-  const first = room.add({ name: "A", avatar: "ghost" });
-  const second = room.add({ name: "B", avatar: "ghost" });
-  const third = room.add({ name: "C" });
-  assert.equal(first.avatar, "ghost");
-  assert.equal(new Set([first, second, third].map((p) => p.avatar)).size, 3);
+  const first = room.add({ name: "A", avatar: "cat.3.2.4.5.1" });
+  assert.equal(first.avatar, "cat.3.2.4.5.1");
+  const copy = room.add({ name: "B", avatar: "cat.3.2.4.5.1" });
+  assert.notEqual(copy.avatar, first.avatar, "an exact copy is changed");
+  assert.equal(parseLook(copy.avatar).hat, 5, "only the colour is nudged");
+  const plain = room.add({ name: "C", avatar: "ghost" });
+  assert.equal(
+    plain.avatar,
+    "ghost.2.0.0.0.0",
+    "a plain shape name still works",
+  );
+  for (const junk of [
+    "nope",
+    "cat.99.0.0.0.0",
+    "cat.1.2.3",
+    "cat.1.2.3.4.5.6",
+    "",
+    undefined,
+    7,
+  ]) {
+    const p = room.add({ name: "J", avatar: junk, spectator: true });
+    assert.ok(parseLook(p.avatar), `${junk} becomes a real face`);
+    assert.equal(formatLook(parseLook(p.avatar)), p.avatar);
+  }
+  const all = room.players.map((p) => p.avatar);
+  assert.equal(
+    new Set(all).size,
+    all.length,
+    "every face in the room is different",
+  );
+  const look = randomLook();
+  for (const [trait, n] of [
+    ["color", sizeOf("color")],
+    ["eyes", sizeOf("eyes")],
+    ["mouth", sizeOf("mouth")],
+    ["hat", sizeOf("hat")],
+    ["extra", sizeOf("extra")],
+  ])
+    assert.ok(look[trait] >= 0 && look[trait] < n);
 });
 test("two players: Duo and Detective still need four, the other modes start", () => {
   for (const mode of ["duo", "detective"])

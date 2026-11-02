@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Check, Mic, Play, Plus } from "lucide-react";
 import { MODES } from "../../shared/modes.js";
+import { LABELS, SHAPES, formatLook, sizeOf } from "../../shared/looks.js";
 import { THEME_LIST } from "../theme.js";
 import { Avatar } from "../components.jsx";
 import {
@@ -164,6 +165,54 @@ function Panel({ theme }) {
   );
 }
 
+/** Every face feature on its own, so a bad hat or mouth is easy to spot. */
+function FaceGallery() {
+  const base = { shape: 0, color: 0, eyes: 0, mouth: 0, hat: 0, extra: 0 };
+  const rows = [
+    [
+      "shape",
+      "Bodies",
+      (i) => ({ shape: i, color: [0, 1, 2, 3, 4, 6, 8, 5][i], hat: 0 }),
+    ],
+    ["color", "Colours", (i) => ({ color: i, shape: i % SHAPES.length })],
+    ["eyes", "Eyes", (i) => ({ eyes: i, shape: 3, color: 1 })],
+    ["mouth", "Mouths", (i) => ({ mouth: i, shape: 2, color: 2 })],
+    [
+      "hat",
+      "Hats",
+      (i) => ({ hat: i, shape: i % SHAPES.length, color: (i * 5) % 12 }),
+    ],
+    [
+      "extra",
+      "Extras",
+      (i) => ({
+        extra: i,
+        shape: 5,
+        color: 6,
+        eyes: i === 3 || i === 5 ? 0 : 1,
+      }),
+    ],
+  ];
+  return (
+    <section className="sg-panel" aria-label="Faces">
+      <h2>Faces</h2>
+      {rows.map(([trait, title, make]) => (
+        <div key={trait} className="sg-faces">
+          <h3>{title}</h3>
+          <div>
+            {Array.from({ length: sizeOf(trait) }, (_, i) => (
+              <figure key={i}>
+                <Avatar kind={formatLook({ ...base, ...make(i) })} size={74} />
+                <figcaption>{LABELS[trait][i]}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 /** Dev-only: every component in all four themes, side by side. Open /styleguide or #/styleguide. */
 export function Styleguide() {
   return (
@@ -175,6 +224,7 @@ export function Styleguide() {
           Every component in every theme. Development only.
         </p>
       </header>
+      <FaceGallery />
       <div className="sg-grid">
         {THEME_LIST.map((t) => (
           <Panel key={t.key} theme={t} />

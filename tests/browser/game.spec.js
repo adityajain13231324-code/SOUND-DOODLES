@@ -671,6 +671,68 @@ test("Classic: every player gets turns, even one who never did a mic check", asy
     await g.close();
   }
 });
+test("face editor: build a look, it reaches the room, and a copycat gets a different face", async ({
+  browser,
+}) => {
+  const contexts = [];
+  try {
+    const join = async (create, code) => {
+      const context = await browser.newContext();
+      contexts.push(context);
+      await context.addInitScript(() =>
+        localStorage.setItem("sd-avatar", "cat.3.2.4.5.1"),
+      );
+      const page = await context.newPage();
+      await page.goto(base);
+      await page
+        .getByRole("button", {
+          name: create ? "Create a room" : "Join a room",
+          exact: true,
+        })
+        .click();
+      return page;
+    };
+    const host = await join(true);
+    await expect(
+      host.getByRole("img", { name: "Cat avatar" }).first(),
+    ).toBeVisible();
+    await expect(host.getByLabel("Hat", { exact: true })).toHaveText(
+      "Cowboy hat",
+    );
+    await host.getByRole("button", { name: "Next hat" }).click();
+    await expect(host.getByLabel("Hat", { exact: true })).toHaveText(
+      "Chef hat",
+    );
+    await host.getByRole("button", { name: "Previous eyes" }).click();
+    await expect(host.getByLabel("Eyes", { exact: true })).toHaveText("Googly");
+    await host.getByRole("radio", { name: "Mint" }).click();
+    await host.getByLabel("Your nickname").fill("Face host");
+    await host
+      .getByRole("button", { name: "Create room", exact: true })
+      .click();
+    await host.getByText("Tonight’s game").waitFor();
+    await expect
+      .poll(() => new URL(host.url()).searchParams.get("room"))
+      .toBeTruthy();
+    const code = new URL(host.url()).searchParams.get("room");
+    const room = app.rooms.get(code);
+    expect(room.players[0].avatar).toBe("cat.2.1.4.6.1");
+
+    // a second player who saved the very same face as the host
+    const guest = await join(false);
+    await guest.getByLabel("Your nickname").fill("Copycat");
+    await guest.getByLabel("Room code").fill(code);
+    await guest.getByRole("button", { name: "Join room", exact: true }).click();
+    await guest.getByText("Tonight’s game").waitFor();
+    const faces = room.players.map((p) => p.avatar);
+    expect(faces).toHaveLength(2);
+    expect(new Set(faces).size).toBe(2);
+    expect(faces[1].startsWith("cat.")).toBe(true);
+    await expect(guest.locator(".player-card")).toHaveCount(2);
+  } finally {
+    for (const c of contexts) await c.close();
+  }
+});
 test("spicy pack needs the 18+ confirmation and shows a banner to everyone", async ({
   browser,
 }) => {

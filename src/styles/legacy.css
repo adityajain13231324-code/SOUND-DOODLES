@@ -457,10 +457,6 @@ select {
   border-color: var(--accent);
 }
 .selected,
-.avatar-picker button.selected {
-  border-color: var(--accent) !important;
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface)) !important;
-}
 .check-row {
   display: flex;
   gap: 10px;
