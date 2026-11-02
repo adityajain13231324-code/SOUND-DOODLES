@@ -1069,3 +1069,84 @@ h3 {
     animation: none;
   }
 }
+
+/* ---------- Ping badge ---------- */
+.ping {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 10px;
+  font: 700 var(--fs-xs) / 1 var(--body);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.ping i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.ping-good i {
+  background: var(--mint);
+}
+.ping-ok i {
+  background: var(--gold);
+}
+.ping-slow i {
+  background: var(--coral);
+  animation: dot-pulse 1.2s ease-in-out infinite;
+}
+.ping-slow {
+  color: var(--text);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.lobby-note.warn {
+  color: var(--text);
+  padding: var(--s-2) var(--s-3);
+  background: color-mix(in srgb, var(--gold) 16%, var(--surface));
+  border: 1px dashed var(--gold);
+  border-radius: var(--r-md);
+}
+
+/* ---------- Lite effects: no blurs, no moving backdrops ---------- */
+[data-fx="lite"] *,
+[data-fx="lite"] *::before,
+[data-fx="lite"] *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+[data-fx="lite"] .stage-bg .grain,
+[data-fx="lite"] .stage-bg .scan,
+[data-fx="lite"] .stage-bg .floor,
+[data-fx="lite"] .stage-bg .spot,
+[data-fx="lite"] .stage-bg .cloud-a,
+[data-fx="lite"] .stage-bg .cloud-b {
+  display: none !important;
+}
+[data-fx="lite"] .stage-bg *,
+[data-fx="lite"] .land-cast .avatar,
+[data-fx="lite"] .brand-mark i,
+[data-fx="lite"] .theme-button,
+[data-fx="lite"] .start-cta.go,
+[data-fx="lite"] .poster.selected {
+  animation: none !important;
+}
+[data-fx="lite"] .site-header::before {
+  background: var(--bg);
+}
+@media (max-width: 559px) {
+  .ping b {
+    font-size: 11px;
+  }
+}

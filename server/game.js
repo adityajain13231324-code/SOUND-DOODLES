@@ -272,10 +272,16 @@ export class Room {
       if (this.settings.customPrompts) this.setPhase("seed", 30);
       else this.beginTask();
     } else {
+      // Classic: everyone with a checked mic takes turns on it. Small rooms always play at least four rounds,
+      // so two friends do not get a one-round game.
+      const performers = this.ids.filter((id) => this.player(id).mic).length;
       this.totalRounds =
         mode === "classic"
-          ? this.ids.filter((id) => this.player(id).mic).length *
-            this.settings.rounds
+          ? performers *
+            Math.max(
+              this.settings.rounds,
+              Math.ceil(4 / Math.max(performers, 1)),
+            )
           : this.settings.rounds;
       this.beginRound();
     }

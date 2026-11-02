@@ -58,3 +58,13 @@ export function watchVisibility() {
   update();
   return () => document.removeEventListener("visibilitychange", update);
 }
+
+export const FX_KEY = "sd-fx";
+/** "Lite" turns off blurs and moving backdrops, which helps older phones feel snappy. */
+export function applyFx(lite) {
+  if (lite) document.documentElement.dataset.fx = "lite";
+  else delete document.documentElement.dataset.fx;
+  try {
+    localStorage.setItem(FX_KEY, lite ? "lite" : "full");
+  } catch {}
+}

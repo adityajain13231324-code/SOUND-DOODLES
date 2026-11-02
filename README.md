@@ -23,7 +23,7 @@ npm run build && npm start
 ## Test it
 
 ```bash
-npm test                 # 38 unit and socket tests
+npm test                 # 39 unit and socket tests
 npx playwright install chromium   # first time only (tests use the Chrome channel)
 npm run test:browser     # 14 browser tests: four sessions per mode, simulated microphones
 node scripts/shots.mjs   # screenshots of every theme at 390, 768 and 1440 px into shots/
@@ -56,6 +56,17 @@ Restarting the server clears every room.
 
 Live audio in Classic and Duo uses WebRTC peer-to-peer. STUN alone fails on some corporate and mobile networks;
 add a TURN relay (for example a free-tier TURN service) through the `TURN_*` variables for dependable play.
+
+## Speed
+
+Every button waits for one round trip to the server, so the delay you feel is mostly distance to the host. The header shows a live ping (green under 120 ms, amber
+under 300 ms, red above). `node scripts/latency-probe.mjs <url>` measures connect time, transport and a "ready" press from any machine. Measured on the live Render
+site from here: about 250 ms per press; the game itself answers in about 1 ms locally.
+
+- Connections go straight to WebSocket (no slow HTTP polling first), and flag-style controls (Ready, mode and settings, watching) update instantly on your screen.
+- **Lite effects** (Sound & motion) turns off blurs and moving backgrounds; older touch phones start in it automatically.
+- On Render, choose the **region closest to your players** (for India, Singapore). A service's region cannot be changed after it is created, so make a new service to move it.
+  The free plan also sleeps when idle, which adds about a minute to the first visit.
 
 ## Privacy
 

@@ -632,3 +632,30 @@ test("Classic only deals one- or two-word prompts, never scenes or sentences", a
         );
   }
 });
+test("small Classic rooms always play at least four rounds, even if only one player checked a mic", () => {
+  const rounds = (n, micCount) => {
+    const f = fixture("classic", n);
+    f.players.forEach((p, i) => (p.mic = i < micCount));
+    f.room.settings = { ...f.room.settings, rounds: 1 };
+    f.room.start();
+    return f.room.totalRounds;
+  };
+  assert.equal(rounds(2, 2), 4); // each of two friends performs twice
+  assert.equal(rounds(2, 1), 4); // one performer: still a real game, not a single round
+  assert.equal(rounds(3, 3), 6);
+  assert.equal(rounds(4, 4), 4);
+  // both friends really get turns on the mic
+  const f = fixture("classic", 2);
+  f.room.start();
+  const performers = new Set();
+  while (f.room.phase !== "results") {
+    const performer = f.room.performerIds[0];
+    performers.add(performer);
+    f.send(performer, "pick", { promptId: f.room.choices[0].id });
+    f.expire();
+    const guesser = f.room.ids.find((id) => id !== performer);
+    f.send(guesser, "guess", { text: f.room.prompt.phrase });
+    f.send(f.room.host, "next");
+  }
+  assert.equal(performers.size, 2);
+});

@@ -12,6 +12,7 @@ import { Cast } from "./ui/Cast.jsx";
 import { TimerRing } from "./ui/kit.jsx";
 import { CountdownOverlay } from "./ui/ceremony.jsx";
 import { sfx } from "./ui/sfx.js";
+import { PingBadge } from "./ui/PingBadge.jsx";
 import { Landing } from "./screens/Landing.jsx";
 import { Entry } from "./screens/Entry.jsx";
 import { Lobby } from "./screens/Lobby.jsx";
@@ -35,7 +36,8 @@ import {
 } from "lucide-react";
 import { io } from "socket.io-client";
 
-const socket = io({ autoConnect: false });
+// WebSocket first: Socket.IO's default starts with slow HTTP polling, which adds round trips on every connect.
+const socket = io({ autoConnect: false, transports: ["websocket", "polling"] });
 function phaseLabel(state) {
   const onMic = state.performers?.includes(state.you);
   const labels = {
@@ -156,10 +158,27 @@ export function App() {
       sfx("join");
     seenCount.current = playerCount;
   }, [playerCount]);
+  const counting = !!state?.deadline;
   useEffect(() => {
+    if (!counting) return;
+    setNow(Date.now());
     const t = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(t);
-  }, []);
+  }, [counting]);
+  // Live ping to the server, shown in the header so network delay is visible.
+  const [ping, setPing] = useState(null);
+  useEffect(() => {
+    if (!connected || !state) return setPing(null);
+    const measure = () => {
+      const t = performance.now();
+      socket.timeout(4000).emit("latency", (err) => {
+        if (!err) setPing(Math.round(performance.now() - t));
+      });
+    };
+    measure();
+    const id = setInterval(measure, 6000);
+    return () => clearInterval(id);
+  }, [connected, !!state]);
   useEffect(() => {
     if (!error) return;
     const t = setTimeout(() => setError(""), 10000);
@@ -223,8 +242,38 @@ export function App() {
           },
         );
     });
+  // Controls that only flip a flag feel instant: show the result now, the server's state confirms (or corrects) it.
+  const optimistic = (s, event, data) => {
+    if (!s) return s;
+    if (event === "ready")
+      return {
+        ...s,
+        players: s.players.map((p) =>
+          p.id === s.you ? { ...p, ready: !!data?.ready } : p,
+        ),
+      };
+    if (event === "seat")
+      return {
+        ...s,
+        players: s.players.map((p) =>
+          p.id === s.you
+            ? { ...p, spectator: !!data?.spectator, ready: false }
+            : p,
+        ),
+      };
+    if (event === "settings" && data?.settings)
+      return {
+        ...s,
+        settings: { ...s.settings, ...data.settings },
+        players: s.players.map((p) => ({ ...p, ready: false })),
+      };
+    return s;
+  };
   const act = (event, data) => {
-    action(event, data).catch(() => {});
+    const before = stateRef.current;
+    if (["ready", "seat", "settings"].includes(event))
+      setState((s) => optimistic(s, event, data));
+    action(event, data).catch(() => before && setState(before));
   };
   const leave = () => {
     socket.emit("leave");
@@ -304,6 +353,7 @@ export function App() {
               GOOD FRIENDS. QUESTIONABLE SOUNDS.
             </span>
           )}
+          {state && <PingBadge ping={ping} />}
           <ThemePicker theme={theme} onChange={setTheme} />
           <button
             className="icon-button"

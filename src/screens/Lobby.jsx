@@ -146,9 +146,13 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
                   ? "Reconnecting…"
                   : p.spectator
                     ? "Spectating"
-                    : p.ready
-                      ? "Ready to make noise"
-                      : "Getting comfy"
+                    : state.settings.mode === "classic" && !p.mic
+                      ? p.ready
+                        ? "Ready · guessing only"
+                        : "No mic check yet"
+                      : p.ready
+                        ? "Ready to make noise"
+                        : "Getting comfy"
               }
             />
           ))}
@@ -337,6 +341,20 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
           <span className="note-dot" aria-hidden="true" />
           {statusLine}
         </p>
+        {state.settings.mode === "classic" &&
+          active.some((p) => !p.mic) &&
+          active.length >= 2 && (
+            <p className="lobby-note warn" role="status">
+              <Mic size={15} aria-hidden="true" />
+              {active
+                .filter((p) => !p.mic)
+                .map((p) => p.name)
+                .join(", ")}{" "}
+              {active.filter((p) => !p.mic).length === 1 ? "hasn’t" : "haven’t"}{" "}
+              done a mic check, so they can only guess and won’t get a turn on
+              the mic.
+            </p>
+          )}
       </section>
 
       {settings && (

@@ -190,6 +190,8 @@ export async function createApp({
         ack({ ok: false, error: e.message });
       }
     });
+    // Tiny round trip the client uses to show a live ping, so network delay is visible.
+    socket.on("latency", (ack) => typeof ack === "function" && ack(Date.now()));
     socket.on("action", (data, ack = () => {}) => {
       try {
         if (!room || !player) throw new GameError("Join a room first.");

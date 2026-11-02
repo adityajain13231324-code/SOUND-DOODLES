@@ -20,6 +20,14 @@
         d.dataset.theme = t || "paper";
         if (localStorage.getItem("sd-reduce-motion") === "1")
           d.dataset.motion = "reduce";
+        // Older or low-memory touch devices start in Lite effects (blurs and moving backdrops off).
+        var fx = localStorage.getItem("sd-fx");
+        var weak =
+          (navigator.hardwareConcurrency || 8) <= 4 ||
+          (navigator.deviceMemory || 8) <= 4;
+        var touch =
+          window.matchMedia && matchMedia("(pointer: coarse)").matches;
+        if (fx === "lite" || (!fx && weak && touch)) d.dataset.fx = "lite";
       } catch (e) {}
     </script>
   </head>

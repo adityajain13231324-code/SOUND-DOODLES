@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { audioPrefs, cue, saveAudio } from "../audio.js";
 import { announcerAvailable, syncMusic } from "../ambience.js";
-import { applyMotion } from "../theme.js";
+import { applyFx, applyMotion } from "../theme.js";
 import { Button, Slider, Toggle } from "../ui/kit.jsx";
 import { sfx } from "../ui/sfx.js";
 import { Volume2 } from "lucide-react";
@@ -19,6 +19,9 @@ export function AudioSettings() {
   const [hasAnnouncer, setHasAnnouncer] = useState(true);
   const [reduce, setReduce] = useState(
     document.documentElement.dataset.motion === "reduce",
+  );
+  const [lite, setLite] = useState(
+    document.documentElement.dataset.fx === "lite",
   );
   useEffect(() => {
     announcerAvailable().then(setHasAnnouncer);
@@ -61,6 +64,18 @@ export function AudioSettings() {
         }}
         label="Reduce motion"
       />
+      <Toggle
+        checked={lite}
+        onChange={(v) => {
+          setLite(v);
+          applyFx(v);
+        }}
+        label="Lite effects (faster on older phones)"
+      />
+      <p className="small muted">
+        Turns off blurs and moving backgrounds. If buttons feel slow, try this
+        first.
+      </p>
       <p className="small muted">
         Calms animation, background movement and confetti. Your device’s own
         “reduce motion” setting is respected automatically.
