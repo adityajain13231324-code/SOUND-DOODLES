@@ -1116,26 +1116,6 @@ main {
     grid-template-columns: 1fr 1fr;
   }
 }
-.land-more {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-2);
-  color: var(--muted);
-  font-size: var(--fs-sm);
-  align-items: center;
-}
-.land-more b {
-  font-size: var(--fs-xs);
-  letter-spacing: 0.16em;
-}
-.land-more span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-}
 .land-foot {
   display: flex;
   flex-wrap: wrap;
@@ -1307,37 +1287,19 @@ main {
   }
 }
 
-/* "More ways to play": real buttons that start a room in that mode */
-.land-more .land-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 6px 14px;
-  font: 600 var(--fs-sm) var(--body);
-  color: var(--text);
-  background: var(--surface);
-  border: var(--border-w) solid var(--card-border);
-  border-radius: 999px;
-  cursor: pointer;
-  transition:
-    translate var(--t2) var(--ease-spring),
-    border-color var(--t2),
-    box-shadow var(--t3);
+/* The four extra modes: full posters, a row of four on wide screens */
+.land-modes .posters-more {
+  grid-template-columns: 1fr 1fr;
 }
-.land-more .land-chip:hover {
-  translate: 0 -3px;
-  border-color: var(--accent);
-  box-shadow: var(--glow);
+@media (min-width: 1000px) {
+  .land-modes .posters-more {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
-.land-more .land-chip:active {
-  translate: 0 1px;
-}
-.land-more .land-chip svg:last-child {
-  color: var(--accent);
-}
-[data-theme="paper"] .land-more .land-chip {
-  box-shadow: 2px 2px 0 var(--ink);
+@media (max-width: 479px) {
+  .land-modes .posters-more {
+    grid-template-columns: 1fr;
+  }
 }
 .mode-hint {
   margin: 0 0 var(--s-3);
@@ -1346,4 +1308,9 @@ main {
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   border: 1px dashed var(--accent);
   border-radius: var(--r-md);
+}
+
+.land-modes-head .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
 }

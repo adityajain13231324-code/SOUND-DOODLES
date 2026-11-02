@@ -108,6 +108,56 @@ test("classic completes, hides choices, keeps matching private and prevents dupl
   }
   assert.equal(rounds, 4);
 });
+test("room settings: shuffles, pick time, hints and flat scoring are validated and honored", () => {
+  const f = fixture();
+  const next = (patch) =>
+    f.send(f.room.host, "settings", {
+      settings: { ...f.room.settings, ...patch },
+    });
+  next({
+    shuffles: 3,
+    chooseSeconds: 10,
+    hints: false,
+    speedBonus: false,
+    performanceSeconds: 90,
+  });
+  assert.equal(f.room.settings.shuffles, 3);
+  assert.throws(() => next({ shuffles: 4 }), /shuffle or timing/);
+  assert.throws(() => next({ chooseSeconds: 15 }), /shuffle or timing/);
+  assert.throws(() => next({ performanceSeconds: 45 }), /timing/);
+  f.room.players.forEach((p) => (p.ready = true));
+  f.room.start();
+  assert.equal(f.room.deadline - f.room.started, 10000);
+  const performer = f.room.performerIds[0];
+  for (let i = 0; i < 3; i++) {
+    f.send(performer, "skipPrompt");
+    f.later(10);
+  }
+  assert.throws(() => f.send(performer, "skipPrompt"), /No shuffles left/);
+  f.send(performer, "pick", { promptId: f.room.choices[0].id });
+  f.expire();
+  const guesser = f.room.eligible[0];
+  assert.equal(f.room.view(guesser).hint, undefined);
+  f.send(guesser, "guess", { text: f.room.prompt.phrase });
+  assert.equal(f.room.player(guesser).score, 150);
+});
+test("room settings: with zero shuffles nobody can reshuffle, and defaults keep the speed bonus and hints", () => {
+  const f = fixture();
+  assert.equal(f.room.settings.speedBonus, true);
+  assert.equal(f.room.settings.hints, true);
+  f.send(f.room.host, "settings", {
+    settings: { ...f.room.settings, shuffles: 0 },
+  });
+  f.room.players.forEach((p) => (p.ready = true));
+  f.room.start();
+  assert.throws(
+    () => f.send(f.room.performerIds[0], "skipPrompt"),
+    /No shuffles left/,
+  );
+  f.send(f.room.performerIds[0], "pick", { promptId: f.room.choices[0].id });
+  f.expire();
+  assert.ok(f.room.view(f.room.eligible[0]).hint);
+});
 test("unauthorized, stale, oversized and out-of-phase events are rejected", () => {
   const f = fixture();
   f.room.start();

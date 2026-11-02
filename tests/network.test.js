@@ -11,7 +11,9 @@ test("independent socket sessions, authenticated recordings, reconnect, host mig
     const s = io(base, { transports: ["websocket"], forceNew: true });
     clients.push(s);
     await new Promise((resolve) => s.on("connect", resolve));
-    const result = await new Promise((resolve) => s.emit("enter", data, resolve));
+    const result = await new Promise((resolve) =>
+      s.emit("enter", data, resolve),
+    );
     assert.ok(result.ok, result.error);
     return { s, ...result };
   };
@@ -28,8 +30,13 @@ test("independent socket sessions, authenticated recordings, reconnect, host mig
       b = await connect({ code: a.code, name: "B" }),
       c = await connect({ code: a.code, name: "C" });
     const room = app.rooms.get(a.code);
-    assert.equal((await send(b, "settings", { settings: room.settings })).ok, false);
-    await send(a, "settings", { settings: { ...room.settings, mode: "gartic" } });
+    assert.equal(
+      (await send(b, "settings", { settings: room.settings })).ok,
+      false,
+    );
+    await send(a, "settings", {
+      settings: { ...room.settings, mode: "gartic" },
+    });
     for (const client of [a, b, c]) {
       await send(client, "mic", { mic: true });
       await send(client, "ready", { ready: true });
@@ -47,7 +54,10 @@ test("independent socket sessions, authenticated recordings, reconnect, host mig
     });
     const { audioId } = await upload.json();
     assert.ok(audioId);
-    assert.equal((await fetch(`${base}/api/rooms/${a.code}/audio/${audioId}`)).status, 401);
+    assert.equal(
+      (await fetch(`${base}/api/rooms/${a.code}/audio/${audioId}`)).status,
+      401,
+    );
     assert.equal(
       (
         await fetch(`${base}/api/rooms/${a.code}/audio/${audioId}`, {

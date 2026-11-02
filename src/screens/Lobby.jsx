@@ -13,11 +13,11 @@ import {
 import { MODES } from "../../shared/modes.js";
 import { mic, createMeter } from "../audio.js";
 import { Poster } from "../ui/Poster.jsx";
-import { ClassicWords, StartingWords } from "../ui/StartingWords.jsx";
+import { RoomSettings, SettingsSummary } from "../ui/RoomSettings.jsx";
 import { PlayerCard, GhostSlot } from "../ui/PlayerCard.jsx";
 import { RoomCodeChip } from "../ui/RoomCodeChip.jsx";
 import { Drawer, Popover } from "../ui/overlays.jsx";
-import { Button, EQ, Toggle } from "../ui/kit.jsx";
+import { Button, EQ } from "../ui/kit.jsx";
 import { sfx } from "../ui/sfx.js";
 
 const SCORING = {
@@ -240,33 +240,29 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
             </span>
           </div>
         )}
-        {state.settings.mode === "classic" && (
-          <ClassicWords settings={state.settings} host={host} change={change} />
-        )}
-        {state.settings.mode === "gartic" && (
-          <StartingWords
+        <div className="mode-tools">
+          <SettingsSummary
             settings={state.settings}
-            host={host}
-            change={change}
+            onOpen={() => setSettings(true)}
           />
-        )}
-        <Popover
-          label="How scoring works"
-          align="start"
-          trigger={({ toggle, props }) => (
-            <button
-              type="button"
-              className="chip-button"
-              onClick={toggle}
-              {...props}
-            >
-              <Info size={15} />
-              How scoring works
-            </button>
-          )}
-        >
-          <p className="scoring-note">{SCORING[state.settings.mode]}</p>
-        </Popover>
+          <Popover
+            label="How scoring works"
+            align="start"
+            trigger={({ toggle, props }) => (
+              <button
+                type="button"
+                className="chip-button"
+                onClick={toggle}
+                {...props}
+              >
+                <Info size={15} />
+                How scoring works
+              </button>
+            )}
+          >
+            <p className="scoring-note">{SCORING[state.settings.mode]}</p>
+          </Popover>
+        </div>
       </section>
 
       <section className="lobby-bottom">
@@ -359,85 +355,7 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
 
       {settings && (
         <Drawer title="Room settings" onClose={() => setSettings(false)}>
-          <div className="room-settings">
-            <label className="field">
-              {state.settings.mode === "classic"
-                ? "Turns per performer"
-                : "Rounds"}
-              <select
-                aria-label={
-                  state.settings.mode === "classic"
-                    ? "Turns per performer"
-                    : "Rounds"
-                }
-                disabled={!host}
-                value={state.settings.rounds}
-                onChange={(e) => change({ rounds: Number(e.target.value) })}
-              >
-                {[1, 2, 3].map((n) => (
-                  <option key={n}>{n}</option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              Difficulty
-              <select
-                disabled={!host}
-                value={state.settings.difficulty}
-                onChange={(e) => change({ difficulty: e.target.value })}
-              >
-                <option value="mixed">A little of everything</option>
-                <option value="easy">Everyday sounds</option>
-                <option value="hard">Weird little scenes</option>
-              </select>
-            </label>
-            {state.settings.mode === "gartic" ? (
-              <>
-                <label className="field">
-                  Chain length
-                  <select
-                    disabled={!host}
-                    value={state.settings.chainLength}
-                    onChange={(e) =>
-                      change({ chainLength: Number(e.target.value) })
-                    }
-                  >
-                    <option value={0}>Everyone contributes once</option>
-                    <option value={3}>3 contributions</option>
-                    <option value={4}>
-                      4 contributions (if enough players)
-                    </option>
-                  </select>
-                </label>
-                <Toggle
-                  disabled={!host}
-                  checked={!!state.settings.awards}
-                  onChange={(v) => change({ awards: v })}
-                  label="Friendly awards vote after the reveal"
-                />
-              </>
-            ) : (
-              <label className="field">
-                Performance time
-                <select
-                  disabled={!host}
-                  value={state.settings.performanceSeconds}
-                  onChange={(e) =>
-                    change({ performanceSeconds: Number(e.target.value) })
-                  }
-                >
-                  {[30, 40, 60].map((n) => (
-                    <option value={n} key={n}>
-                      {n} seconds
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {!host && (
-              <p className="muted">Only the host can change room settings.</p>
-            )}
-          </div>
+          <RoomSettings settings={state.settings} host={host} change={change} />
         </Drawer>
       )}
     </div>

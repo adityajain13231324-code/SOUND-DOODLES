@@ -5,7 +5,7 @@
 - **1,399 starting words** in 15 packs, every entry one or two words (never a sentence): Animals, Famous people, Characters & legends, Food & drink,
   Places & landmarks, Things around the house, Jobs, Sports & games, Nature & weather, Vehicles & machines, Fantasy & monsters, Movies & shows,
   Music & instruments, Everyday actions, Science & space. The original list of sound ideas is still available as the "Sound ideas" pack.
-- **Starting words** choice in the lobby (Gartic Sounds only):
+- **Starting words** choice in **Room settings** (Gartic Sounds only):
   - _From the library_: everyone is dealt a surprise word from the chosen pack ("Everything" by default).
   - _We write our own_: each player types a word of **one or two words**. A live counter and message refuse sentences; the server enforces the same rule.
     The player can shuffle the suggested word up to three times or keep it. Anyone who passes or runs out of time keeps their suggestion.
@@ -17,7 +17,7 @@
 - `server/words.js`: the packs, `cleanStartingWord()` (the one-or-two-word rule), `wordsFor()`, `libraryOverview()`.
 - `server/game.js`: `wordPack` room setting, `drawWord()` (no repeats until a pack is used up), `shuffleSeed` event, seed-phase validation.
 - `GET /api/words/library`: pack names, sizes and random samples only.
-- `src/ui/StartingWords.jsx`, `src/ui/WordLibrary.jsx`, `src/screens/SeedScreen.jsx`, `src/styles/words.css`.
+- `src/ui/RoomSettings.jsx`, `src/ui/WordLibrary.jsx`, `src/screens/SeedScreen.jsx`, `src/styles/words.css`.
 
 ## Rules
 
@@ -56,3 +56,13 @@ Unit: library integrity, the word rule, own-word seed phase, pack draws, shuffle
 The mic check lists microphones as soon as it opens and refreshes when hardware is plugged in or removed. Browsers hide device names until microphone permission is
 granted, so unnamed devices appear as "Microphone 1, 2…" with a **Find my microphones** button. The chosen microphone is remembered, and if it is unplugged the
 game falls back to the system default.
+
+## Room settings (drawer)
+
+The lobby shows one slim summary line (turn length, words to pick, pack, turns); everything else lives in the **Room settings** drawer, grouped:
+
+- **Rounds and timing**: turns or rounds, performance time (20/30/40/60/90s), Classic pick-a-word time (10/20/30s), Gartic recording time (20/35/50s), chain length.
+- **Words**: words to pick from (3/4/5), Gartic starting words (library or write your own), pack browser, difficulty.
+- **Helpers and scoring**: word shuffles per turn (0-3), guesser hints on/off, speed bonus on/off (flat 150 points when off), Gartic awards vote.
+
+All of these are validated on the server (`settings` event) and only the host can change them.

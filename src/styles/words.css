@@ -1,91 +1,5 @@
 /* Starting words: lobby choice, word library browser, seed screen. */
 
-.starting-words {
-  display: grid;
-  gap: var(--s-3);
-  margin: var(--s-4) 0;
-  padding: var(--s-4);
-  background: var(--card-bg);
-  backdrop-filter: var(--blur);
-  border: var(--border-w) solid var(--card-border);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-card);
-  animation: rise var(--t4) var(--ease-out) both;
-}
-.sw-head {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s-3);
-}
-.sw-head h3 {
-  margin: 0;
-  font-size: var(--fs-lg);
-}
-.sw-head small {
-  color: var(--muted);
-}
-.segmented {
-  display: grid;
-  gap: var(--s-2);
-}
-@media (min-width: 640px) {
-  .segmented {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-.segmented button {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  min-height: 64px;
-  padding: var(--s-3) var(--s-4);
-  text-align: left;
-  color: var(--text);
-  background: var(--surface-2);
-  border: var(--border-w) solid var(--line);
-  border-radius: var(--r-md);
-  cursor: pointer;
-  transition:
-    translate var(--t2) var(--ease-ui),
-    border-color var(--t2),
-    background-color var(--t2),
-    box-shadow var(--t3);
-}
-.segmented button:hover:not(:disabled):not(.on) {
-  translate: 0 -2px;
-  border-color: var(--accent);
-}
-.segmented button.on {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
-}
-.segmented button:disabled {
-  cursor: default;
-  opacity: 0.8;
-}
-.segmented button svg {
-  flex: none;
-  color: var(--accent);
-}
-.segmented button span {
-  display: grid;
-  gap: 2px;
-}
-.segmented button small {
-  color: var(--muted);
-  font-size: var(--fs-xs);
-}
-.sw-pack {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-2) var(--s-4);
-  font-size: var(--fs-sm);
-  color: var(--muted);
-}
-
 /* Word library */
 .lib {
   display: grid;
@@ -277,24 +191,6 @@ dialog:has(.lib) {
 }
 
 /* Classic word choices, difficulty tags and the 18+ pack */
-.sw-sub {
-  margin: -4px 0 0;
-  font-size: var(--fs-sm);
-  color: var(--muted);
-}
-.segmented.count {
-  grid-template-columns: repeat(3, 1fr);
-}
-.segmented.count button {
-  flex-direction: column;
-  justify-content: center;
-  gap: 0;
-  text-align: center;
-  min-height: 72px;
-}
-.segmented.count strong {
-  font: 800 1.8rem / 1 var(--display);
-}
 .sw-flame {
   vertical-align: -2px;
   margin-right: 4px;
@@ -401,4 +297,149 @@ dialog:has(.lib) {
 }
 .diff i {
   font-style: normal;
+}
+
+/* Room settings drawer: grouped, compact controls */
+.room-settings {
+  display: grid;
+  gap: var(--s-5);
+}
+.set-group {
+  display: grid;
+  gap: var(--s-3);
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--line);
+}
+.set-group:last-of-type {
+  border-bottom: 0;
+}
+.set-group h3 {
+  margin: 0;
+  font: 700 var(--fs-xs) / 1 var(--body);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.set-row {
+  display: grid;
+  gap: var(--s-2);
+}
+.set-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.set-label strong {
+  font-size: var(--fs-sm);
+}
+.set-label small {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pill {
+  flex: 1 1 0;
+  min-width: 48px;
+  min-height: 40px;
+  padding: 6px 12px;
+  font: 600 var(--fs-sm) var(--body);
+  color: var(--text);
+  background: var(--surface-2);
+  border: var(--border-w) solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    translate var(--t2) var(--ease-ui),
+    border-color var(--t2),
+    background-color var(--t2),
+    box-shadow var(--t3);
+}
+.pills.wide .pill {
+  flex-basis: 45%;
+}
+.pill:hover:not(:disabled):not(.on) {
+  translate: 0 -2px;
+  border-color: var(--accent);
+}
+.pill.on {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.pill:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.set-pack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-3);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+/* Slim settings strip under the lobby posters */
+.mode-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+}
+.settings-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 44px;
+  padding: 6px 8px 6px 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border-w) solid var(--card-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    translate var(--t2) var(--ease-spring),
+    border-color var(--t2);
+}
+.settings-summary:hover {
+  translate: 0 -2px;
+  border-color: var(--accent);
+}
+.settings-summary-bits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.settings-summary-bits i {
+  font-style: normal;
+}
+.settings-summary-bits i + i::before {
+  content: "·";
+  margin-right: 12px;
+  color: var(--line);
+}
+.settings-summary b {
+  padding: 4px 12px;
+  font-size: var(--fs-xs);
+  color: var(--on-accent);
+  background: var(--accent);
+  border-radius: 999px;
+}
+.set-group .field {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.set-group .field select {
+  font-weight: 500;
 }
