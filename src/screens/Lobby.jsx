@@ -96,7 +96,11 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
     active.every((p) => p.ready) &&
     (state.settings.mode === "classic" || active.every((p) => p.mic));
   const change = (patch) =>
-    act("settings", { settings: { ...state.settings, ...patch } });
+    // `wordPack` is only a mirror for older pages; this page speaks in `wordPacks`.
+    {
+      const { wordPack, ...current } = state.settings;
+      act("settings", { settings: { ...current, ...patch } });
+    };
   const waiting = active.length - readyCount;
   const missing = mode.min - active.length;
   const statusLine =

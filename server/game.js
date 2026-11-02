@@ -9,9 +9,13 @@ import {
   wordsFor,
   cleanStartingWord,
   libraryEntries,
+  ADULT_PACK_IDS,
   libraryPrompt,
   DIFFICULTY_RANK,
 } from "./words.js";
+
+/** Changes with every deploy, so open pages can tell they are out of date. */
+export const BUILD = process.env.RENDER_GIT_COMMIT || String(Date.now());
 
 export class GameError extends Error {}
 export const AWARD_CATEGORIES = [
@@ -70,6 +74,7 @@ export class Room {
       customPrompts: false,
       awards: false,
       wordPacks: ["mixed"],
+      wordPack: "mixed", // legacy mirror for pages still running an older build
       choices: 4,
       adultsOnly: false,
       shuffles: 1,
@@ -164,8 +169,15 @@ export class Room {
             p.phrase.trim().split(/\s+/).length <= 2,
         )
       : [];
-    // Every chosen pack is equally likely, so a small pack still shows up when mixed with big ones.
-    const entries = packIds.map((id) => libraryEntries(id));
+    // Every chosen pack is equally likely, so a small pack still shows up when mixed with big ones. An 18+ pack
+    // that was added on purpose gets 40% of the library picks, so "Everything + Spicy" really is spicy.
+    const adultLists = packIds
+      .filter((id) => ADULT_PACK_IDS.includes(id))
+      .map((id) => libraryEntries(id));
+    const otherLists = packIds
+      .filter((id) => !ADULT_PACK_IDS.includes(id))
+      .map((id) => libraryEntries(id));
+    const entries = [...adultLists, ...otherLists];
     const wantedOrder = ["easy", "easy", "medium", "hard", "medium"];
     const chosen = [];
     const taken = new Set();
@@ -176,7 +188,13 @@ export class Room {
         const p = fromCurated
           ? curated[randomInt(curated.length)]
           : (() => {
-              const list = entries[randomInt(entries.length)];
+              const pool =
+                adultLists.length && otherLists.length
+                  ? randomInt(10) < 4
+                    ? adultLists
+                    : otherLists
+                  : entries;
+              const list = pool[randomInt(pool.length)];
               const e = list[randomInt(list.length)];
               return libraryPrompt(e.word, e.packId);
             })();
@@ -206,8 +224,12 @@ export class Room {
   }
   /** A starting word for Gartic: from the chosen library pack, never repeated within the recent past. */
   drawWord() {
-    const words = wordsFor(this.settings.wordPacks);
+    let words = wordsFor(this.settings.wordPacks);
     if (!words) return this.draw().phrase;
+    const { packIds } = resolvePacks(this.settings.wordPacks);
+    const adult = packIds.filter((id) => ADULT_PACK_IDS.includes(id));
+    if (adult.length && adult.length < packIds.length && randomInt(10) < 4)
+      words = wordsFor(adult);
     this.recentWords ||= [];
     let pool = words.filter((w) => !this.recentWords.includes(w));
     if (!pool.length) {
@@ -412,8 +434,13 @@ export class Room {
         s && MODES[s.mode] && ["mixed", "easy", "hard"].includes(s.difficulty),
         "Choose valid room settings.",
       );
-      // Older clients send a single "wordPack"; newer ones send a list of packs to mix.
-      const packs = s.wordPacks ?? (s.wordPack ? [s.wordPack] : ["mixed"]);
+      // Newer pages send a list of packs to mix. A page still running an older build sends a single "wordPack"
+      // (and echoes back the list it was given): when that single value changed, it is the player's choice.
+      const legacyChoice =
+        typeof s.wordPack === "string" && s.wordPack !== this.settings.wordPack;
+      const packs = legacyChoice
+        ? [s.wordPack]
+        : (s.wordPacks ?? (s.wordPack ? [s.wordPack] : ["mixed"]));
       requireThat(
         Array.isArray(packs) &&
           packs.length >= 1 &&
@@ -452,6 +479,7 @@ export class Room {
         customPrompts: !!s.customPrompts,
         awards: !!s.awards,
         wordPacks: [...new Set(packs)],
+        wordPack: packs[0],
         choices: s.choices ?? 4,
         adultsOnly: hasAdultPack(packs) && s.adultsOnly === true,
         shuffles: s.shuffles ?? 1,
@@ -1060,6 +1088,7 @@ export class Room {
       serverNow: this.now(),
       deadline: this.deadline,
       settings: this.settings,
+      build: BUILD,
       players: this.players.map(
         ({ id, name, avatar, connected, ready, mic, spectator, score }) => ({
           id,

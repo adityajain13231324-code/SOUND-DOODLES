@@ -8,7 +8,14 @@ import { sfx } from "./sfx.js";
 export function usePackName(settings) {
   const { data } = useLibrary();
   const picked = settings.wordPacks || ["mixed"];
-  if (picked.includes("mixed")) return "Everything";
+  const nameOf = (id) =>
+    id === "sounds"
+      ? "Sound ideas"
+      : data?.packs.find((p) => p.id === id)?.name || "Library";
+  if (picked.includes("mixed")) {
+    const extra = picked.filter((id) => id !== "mixed").map(nameOf);
+    return ["Everything", ...extra].join(" + ");
+  }
   const names = picked.map((id) =>
     id === "sounds"
       ? "Sound ideas"

@@ -79,22 +79,27 @@ const EXTRA = [
 export function WordLibrary({ selected, canChoose, onChange, onClose }) {
   const { data, error, reload } = useLibrary();
   const everything = selected.includes("mixed");
-  // Everything is a preset; the first pack you tap narrows it to just that pack, then taps add or remove.
+  const adultIds = (data?.packs || []).filter((p) => p.adult).map((p) => p.id);
+  const send = (next) =>
+    onChange(
+      next,
+      next.some((id) => adultIds.includes(id)),
+    );
+  // Everything is a preset. Tapping a family pack narrows it to that pack, then taps add or remove. An 18+ pack
+  // stacks on top of Everything instead, so "Everything + Spicy" is one tap, and it survives narrowing.
   const toggle = (id) => {
     let next;
-    if (everything) next = [id];
-    else if (selected.includes(id)) next = selected.filter((x) => x !== id);
+    if (selected.includes(id)) next = selected.filter((x) => x !== id);
+    else if (everything && !adultIds.includes(id))
+      next = [id, ...selected.filter((x) => adultIds.includes(x))];
     else next = [...selected, id];
-    if (!next.length) return;
-    const adults = !!data?.packs.some((p) => p.adult && next.includes(p.id));
-    onChange(next, adults);
+    if (next.length) send(next);
   };
   // The spicy pack needs a grown-up confirmation before the host can switch it on.
   const [confirming, setConfirming] = useState(null);
   const card = (p, extra) => {
     const Icon = ICONS[p.icon] || Layers;
-    const chosen =
-      p.id === "mixed" ? everything : !everything && selected.includes(p.id);
+    const chosen = p.id === "mixed" ? everything : selected.includes(p.id);
     const onlyOne = chosen && !everything && selected.length === 1;
     return (
       <article
@@ -159,7 +164,11 @@ export function WordLibrary({ selected, canChoose, onChange, onClose }) {
             disabled={!canChoose || onlyOne}
             icon={chosen ? <Check size={16} /> : undefined}
             onClick={() => {
-              if (p.id === "mixed") return onChange(["mixed"], false);
+              if (p.id === "mixed")
+                return send([
+                  "mixed",
+                  ...selected.filter((x) => adultIds.includes(x)),
+                ]);
               if (p.adult && !chosen) return setConfirming(p.id);
               toggle(p.id);
             }}
@@ -172,7 +181,7 @@ export function WordLibrary({ selected, canChoose, onChange, onClose }) {
                 ? p.id === "mixed" || onlyOne
                   ? "In use"
                   : "In the mix · remove"
-                : p.id === "mixed" || everything
+                : p.id === "mixed" || (everything && !p.adult)
                   ? "Use this pack"
                   : "Add to the mix"}
           </Button>

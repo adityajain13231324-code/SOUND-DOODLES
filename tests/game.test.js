@@ -794,6 +794,7 @@ test("several packs can be mixed: draws stay inside them, spicy needs the 18+ fl
   const { wordsFor, hasAdultPack } = await import("../server/words.js");
   const f = fixture("classic", 3);
   const base = { ...f.room.settings };
+  delete base.wordPack;
   f.send(f.room.host, "settings", {
     settings: { ...base, wordPacks: ["animals", "food", "vehicles"] },
   });
@@ -893,4 +894,49 @@ test("guessing is forgiving: a single meaningful word, another word form or a co
   // scenes still need all their parts
   const robot = prompts.find((p) => p.phrase === "Robot with hiccups");
   assert.ok(!matchPrompt(robot, "robot").correct);
+});
+
+test("a page from an older build still works: its single wordPack choice is honored and mirrored back", () => {
+  const f = fixture("classic", 3);
+  const host = f.room.host;
+  // an old page echoes back the settings it was given and changes only wordPack
+  const settings = { ...f.room.settings, wordPack: "animals" };
+  f.send(host, "settings", { settings });
+  assert.deepEqual(f.room.settings.wordPacks, ["animals"]);
+  assert.equal(f.room.view(host).settings.wordPack, "animals");
+  // a current page changes the list and does not send the legacy field
+  const { wordPack, ...current } = f.room.settings;
+  f.send(host, "settings", {
+    settings: { ...current, wordPacks: ["food", "vehicles"] },
+  });
+  assert.deepEqual(f.room.settings.wordPacks, ["food", "vehicles"]);
+  assert.ok(f.room.view(host).build);
+});
+
+test("Everything + Spicy: both are selectable together and spicy words really show up", async () => {
+  const { wordsFor } = await import("../server/words.js");
+  const f = fixture("classic", 3);
+  const { wordPack, ...current } = f.room.settings;
+  f.send(f.room.host, "settings", {
+    settings: { ...current, wordPacks: ["mixed", "spicy"], adultsOnly: true },
+  });
+  assert.deepEqual(f.room.settings.wordPacks, ["mixed", "spicy"]);
+  assert.equal(f.room.settings.adultsOnly, true);
+  const spicy = new Set(wordsFor("spicy"));
+  let spicyDealt = 0;
+  let total = 0;
+  for (let i = 0; i < 100; i++)
+    for (const p of f.room.drawChoices(5)) {
+      total++;
+      if (spicy.has(p.phrase)) spicyDealt++;
+    }
+  assert.ok(spicyDealt / total > 0.1, `spicy share ${spicyDealt / total}`);
+  assert.ok(spicyDealt < total, "family words still appear");
+  // it also works for Gartic starting words
+  const g = fixture("gartic", 4);
+  g.room.settings = { ...g.room.settings, wordPacks: ["mixed", "spicy"] };
+  const words = Array.from({ length: 200 }, () => g.room.drawWord());
+  assert.ok(
+    words.some((w) => spicy.has(w)) && words.some((w) => !spicy.has(w)),
+  );
 });

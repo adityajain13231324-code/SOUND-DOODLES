@@ -77,6 +77,18 @@ export function Drawer({ title, onClose, children, side = "right" }) {
   );
 }
 
+/** Shown when the server was updated while this page stayed open. */
+export function UpdatePill() {
+  return (
+    <div className="reconnect-pill" role="status">
+      A new version of the game is ready
+      <button type="button" onClick={() => location.reload()}>
+        Refresh
+      </button>
+    </div>
+  );
+}
+
 /** Pill that replaces broken screens when the socket drops. */
 export function ReconnectPill({ onRetry }) {
   return (
