@@ -285,6 +285,14 @@ export function App() {
     history.replaceState({}, "", "/");
   };
   const host = state?.host === state?.you;
+  // A mode picked on the landing page becomes the lobby's mode as soon as the room exists.
+  const [wantedMode, setWantedMode] = useState(null);
+  useEffect(() => {
+    if (!wantedMode || !state || state.phase !== "lobby") return;
+    if (host && state.settings.mode !== wantedMode && MODES[wantedMode])
+      act("settings", { settings: { ...state.settings, mode: wantedMode } });
+    setWantedMode(null);
+  }, [wantedMode, state?.phase, host]);
   const me = state?.players.find((p) => p.id === state.you);
   // A snapshot captures the local offset; subsequent renders must not reset it.
   const offset = useRef(0);
@@ -384,8 +392,14 @@ export function App() {
       <main>
         {!state ? (
           <Landing
-            onCreate={() => setModal("create")}
-            onJoin={() => setModal("join")}
+            onCreate={(mode) => {
+              setWantedMode(typeof mode === "string" ? mode : null);
+              setModal("create");
+            }}
+            onJoin={() => {
+              setWantedMode(null);
+              setModal("join");
+            }}
             onHelp={() => setModal("help")}
           />
         ) : (
@@ -550,6 +564,7 @@ export function App() {
           connected={connected}
           enter={enter}
           code={initialCode || session?.code}
+          startMode={wantedMode ? MODES[wantedMode]?.name : ""}
           onClose={() => setModal(null)}
         />
       )}

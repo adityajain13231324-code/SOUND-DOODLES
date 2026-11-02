@@ -46,7 +46,15 @@ function CodeBoxes({ value, onChange }) {
   );
 }
 
-export function Entry({ type, onClose, enter, busy, connected, code = "" }) {
+export function Entry({
+  type,
+  onClose,
+  enter,
+  busy,
+  connected,
+  code = "",
+  startMode = "",
+}) {
   const [name, setName] = useState(localStorage.getItem("sd-name") || ""),
     [avatar, setAvatar] = useState(localStorage.getItem("sd-avatar") || ""),
     [roomCode, setCode] = useState(code),
@@ -69,6 +77,11 @@ export function Entry({ type, onClose, enter, busy, connected, code = "" }) {
         Pick a little face and a name your friends will recognize. Skip the face
         and we’ll give you one nobody else has.
       </p>
+      {type === "create" && startMode && (
+        <p className="mode-hint">
+          Starting with <b>{startMode}</b>. You can change it in the lobby.
+        </p>
+      )}
       <form
         onSubmit={async (e) => {
           e.preventDefault();

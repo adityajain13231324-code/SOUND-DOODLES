@@ -612,6 +612,42 @@ test("spicy pack needs the 18+ confirmation and shows a banner to everyone", asy
     await g.close();
   }
 });
+test("every game mode on the landing page is clickable and starts a room in that mode", async ({
+  browser,
+}) => {
+  const names = {
+    classic: "Classic",
+    gartic: "Gartic Sounds",
+    duo: "Duo Orchestra",
+    detective: "Sound Detective",
+    foley: "Five-Second Foley",
+    ranking: "Blind Ranking",
+  };
+  for (const [key, name] of Object.entries(names)) {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    try {
+      await page.goto(base);
+      const trigger = ["classic", "gartic"].includes(key)
+        ? page.locator(".posters .poster").filter({ hasText: name })
+        : page.locator(".land-chip").filter({ hasText: name });
+      await expect(trigger).toBeVisible();
+      await expect(trigger).toBeEnabled();
+      await trigger.click();
+      await expect(page.getByText(`Starting with ${name}`)).toBeVisible();
+      await page.getByLabel("Your nickname").fill("Mode tester");
+      await page
+        .getByRole("button", { name: "Create room", exact: true })
+        .click();
+      await page.getByText("Tonight’s game").waitFor();
+      await expect(
+        page.locator(".poster[aria-pressed='true']").filter({ hasText: name }),
+      ).toBeVisible();
+    } finally {
+      await ctx.close();
+    }
+  }
+});
 for (const mode of ["duo", "detective", "foley", "ranking"])
   test(`${mode}: complete browser match to results`, async ({ browser }) => {
     const g = await group(browser);
