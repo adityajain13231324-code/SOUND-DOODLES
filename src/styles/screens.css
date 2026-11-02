@@ -1306,3 +1306,44 @@ main {
     display: none;
   }
 }
+
+/* "More ways to play": real buttons that start a room in that mode */
+.land-more .land-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 14px;
+  font: 600 var(--fs-sm) var(--body);
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border-w) solid var(--card-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    translate var(--t2) var(--ease-spring),
+    border-color var(--t2),
+    box-shadow var(--t3);
+}
+.land-more .land-chip:hover {
+  translate: 0 -3px;
+  border-color: var(--accent);
+  box-shadow: var(--glow);
+}
+.land-more .land-chip:active {
+  translate: 0 1px;
+}
+.land-more .land-chip svg:last-child {
+  color: var(--accent);
+}
+[data-theme="paper"] .land-more .land-chip {
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.mode-hint {
+  margin: 0 0 var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  font-size: var(--fs-sm);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border: 1px dashed var(--accent);
+  border-radius: var(--r-md);
+}

@@ -1,5 +1,12 @@
 import React from "react";
-import { ArrowRight, Headphones, Mic, Plus, Users } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Headphones,
+  Mic,
+  Plus,
+  Users,
+} from "lucide-react";
 import { AVATARS, MODES } from "../../shared/modes.js";
 import { Avatar } from "../components.jsx";
 import { Poster } from "../ui/Poster.jsx";
@@ -73,7 +80,7 @@ export function Landing({ onCreate, onJoin, onHelp }) {
             variant="primary"
             size="lg"
             icon={<Plus size={22} />}
-            onClick={onCreate}
+            onClick={() => onCreate()}
           >
             Create a room
           </Button>
@@ -129,9 +136,16 @@ export function Landing({ onCreate, onJoin, onHelp }) {
           {extras.map(([key, m]) => {
             const Icon = icons[m.icon];
             return (
-              <span key={key}>
+              <button
+                key={key}
+                type="button"
+                className="land-chip"
+                onClick={() => onCreate(key)}
+                title={`Start a room with ${m.name}`}
+              >
                 <Icon size={16} /> {m.name}
-              </span>
+                <ArrowUpRight size={14} aria-hidden="true" />
+              </button>
             );
           })}
         </div>
