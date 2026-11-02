@@ -1,17 +1,9 @@
 import React from "react";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  Headphones,
-  Mic,
-  Plus,
-  Users,
-} from "lucide-react";
+import { ArrowRight, Headphones, Mic, Plus, Users } from "lucide-react";
 import { AVATARS, MODES } from "../../shared/modes.js";
 import { Avatar } from "../components.jsx";
 import { Poster } from "../ui/Poster.jsx";
 import { Button } from "../ui/kit.jsx";
-import { icons } from "../support.js";
 
 // Where the floating cast drifts behind the headline.
 const CAST = [
@@ -131,23 +123,17 @@ export function Landing({ onCreate, onJoin, onHelp }) {
             />
           ))}
         </div>
-        <div className="land-more">
-          <b>MORE WAYS TO PLAY</b>
-          {extras.map(([key, m]) => {
-            const Icon = icons[m.icon];
-            return (
-              <button
-                key={key}
-                type="button"
-                className="land-chip"
-                onClick={() => onCreate(key)}
-                title={`Start a room with ${m.name}`}
-              >
-                <Icon size={16} /> {m.name}
-                <ArrowUpRight size={14} aria-hidden="true" />
-              </button>
-            );
-          })}
+        <div className="posters posters-more">
+          {extras.map(([key, m], i) => (
+            <Poster
+              key={key}
+              index={i + 2}
+              modeKey={key}
+              mode={m}
+              compact
+              onSelect={onCreate}
+            />
+          ))}
         </div>
       </section>
     </div>

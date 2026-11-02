@@ -69,6 +69,11 @@ export class Room {
       wordPack: "mixed",
       choices: 4,
       adultsOnly: false,
+      shuffles: 1,
+      chooseSeconds: 20,
+      recordSeconds: 35,
+      hints: true,
+      speedBonus: true,
     };
     this.reactions = [];
     this.replay = 0;
@@ -307,7 +312,7 @@ export class Room {
       this.performerIds = [performers[this.round % performers.length]];
       this.eligible = this.ids.filter((id) => !this.performerIds.includes(id));
       this.choices = this.drawChoices();
-      this.setPhase("choose", 20);
+      this.setPhase("choose", this.settings.chooseSeconds);
     } else if (mode === "duo") {
       this.performerIds = [
         this.ids[this.round % this.ids.length],
@@ -328,14 +333,14 @@ export class Room {
     } else {
       this.prompt = this.draw();
       this.animation = ["bounce", "slip", "door"][this.round % 3];
-      this.setPhase("record", 35);
+      this.setPhase("record", this.settings.recordSeconds);
     }
   }
   beginTask() {
     this.submissions = {};
     this.setPhase(
       this.contributionRound % 2 === 0 ? "record" : "interpret",
-      this.contributionRound % 2 === 0 ? 35 : 30,
+      this.contributionRound % 2 === 0 ? this.settings.recordSeconds : 30,
     );
   }
   task(id) {
@@ -409,8 +414,16 @@ export class Room {
       requireThat(
         [1, 2, 3].includes(s.rounds) &&
           [0, 3, 4].includes(s.chainLength) &&
-          [30, 40, 60].includes(s.performanceSeconds),
+          [20, 30, 40, 60, 90].includes(s.performanceSeconds),
         "Unsupported timing or round count.",
+      );
+      requireThat(
+        (s.shuffles === undefined || [0, 1, 2, 3].includes(s.shuffles)) &&
+          (s.chooseSeconds === undefined ||
+            [10, 20, 30].includes(s.chooseSeconds)) &&
+          (s.recordSeconds === undefined ||
+            [20, 35, 50].includes(s.recordSeconds)),
+        "Unsupported shuffle or timing choice.",
       );
       this.settings = {
         mode: s.mode,
@@ -423,6 +436,11 @@ export class Room {
         wordPack: s.wordPack ?? "mixed",
         choices: s.choices ?? 4,
         adultsOnly: s.wordPack === "spicy" && s.adultsOnly === true,
+        shuffles: s.shuffles ?? 1,
+        chooseSeconds: s.chooseSeconds ?? 20,
+        recordSeconds: s.recordSeconds ?? 35,
+        hints: s.hints !== false,
+        speedBonus: s.speedBonus !== false,
       };
       this.players.forEach((p) => (p.ready = false));
       return;
@@ -478,8 +496,8 @@ export class Room {
       requireThat(
         this.phase === "choose" &&
           this.performerIds.includes(id) &&
-          this.skips < 1,
-        "One shuffle is allowed per turn.",
+          this.skips < this.settings.shuffles,
+        "No shuffles left this turn.",
       );
       this.skips++;
       this.choices = this.drawChoices();
@@ -517,7 +535,9 @@ export class Room {
           (this.deadline - this.now()) /
             (this.settings.performanceSeconds * 1000 * this.scale),
         );
-        const points = 100 + Math.round(100 * remaining);
+        const points = this.settings.speedBonus
+          ? 100 + Math.round(100 * remaining)
+          : 150;
         this.solved[id] = points;
         p.score += points;
       }
@@ -1069,7 +1089,7 @@ export class Room {
           mode === "duo"
             ? this.prompt.components[this.performerIds.indexOf(id)].join(" / ")
             : this.prompt.phrase;
-      if (this.phase === "perform")
+      if (this.phase === "perform" && this.settings.hints)
         v.hint =
           this.prompt.hints[
             Math.min(

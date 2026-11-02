@@ -81,11 +81,12 @@ for (const theme of themes) {
       .locator(".lobby-mode")
       .filter({ hasText: "Gartic Sounds" })
       .click();
+    await host.getByRole("button", { name: "Room settings" }).click();
     await host.getByRole("radio", { name: /We write our own/ }).click();
-    await host.getByText("Starting words").scrollIntoViewIfNeeded();
-    await shot(host, "1-lobby-starting-words");
+    await shot(host, "1-settings-words");
     await host.getByRole("button", { name: "Browse the word library" }).click();
     await shot(host, "2-library");
+    await host.keyboard.press("Escape");
     await host.keyboard.press("Escape");
     await Promise.all(
       pages.map((p) =>

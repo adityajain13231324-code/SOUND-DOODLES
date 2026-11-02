@@ -23,9 +23,9 @@ npm run build && npm start
 ## Test it
 
 ```bash
-npm test                 # 39 unit and socket tests
+npm test                 # 41 unit and socket tests
 npx playwright install chromium   # first time only (tests use the Chrome channel)
-npm run test:browser     # 15 browser tests: four sessions per mode, simulated microphones
+npm run test:browser     # 16 browser tests: four sessions per mode, simulated microphones
 node scripts/shots.mjs   # screenshots of every theme at 390, 768 and 1440 px into shots/
 npm run dev              # then open /styleguide (or #/styleguide) to see every component in all four themes
 ```

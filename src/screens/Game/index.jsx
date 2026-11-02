@@ -349,14 +349,20 @@ export function Game({ state: s, me, session, host, act, action, upload }) {
                 </button>
               ))}
             </div>
-            <button
-              className="text-button"
-              disabled={s.skips >= 1}
-              onClick={() => act("skipPrompt")}
-            >
-              <RotateCcw size={15} />
-              Shuffle once
-            </button>
+            {s.settings.shuffles > 0 && (
+              <button
+                className="text-button"
+                disabled={s.skips >= s.settings.shuffles}
+                onClick={() => act("skipPrompt")}
+              >
+                <RotateCcw size={15} />
+                {s.skips >= s.settings.shuffles
+                  ? "No shuffles left"
+                  : s.settings.shuffles === 1
+                    ? "Shuffle once"
+                    : `Shuffle words (${s.settings.shuffles - s.skips} left)`}
+              </button>
+            )}
             <button className="text-button" onClick={() => act("pass")}>
               Pass this turn
             </button>
@@ -461,7 +467,7 @@ export function Game({ state: s, me, session, host, act, action, upload }) {
           </div>
         ) : (
           <>
-            <p className="hint">A small hint: {s.hint}</p>
+            {s.hint && <p className="hint">A small hint: {s.hint}</p>}
             {s.progress?.total > 0 && (
               <p className="component-progress">
                 {s.progress.components.length} / {s.progress.total} parts

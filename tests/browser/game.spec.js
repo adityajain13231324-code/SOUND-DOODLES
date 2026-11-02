@@ -474,8 +474,10 @@ test("Gartic own-word mode: type one or two words, sentences are refused, shuffl
       .locator(".lobby-mode")
       .filter({ hasText: "Gartic Sounds" })
       .click();
+    await host.getByRole("button", { name: "Room settings" }).click();
     await host.getByRole("radio", { name: /We write our own/ }).click();
     await expect.poll(() => g.room.settings.customPrompts).toBe(true);
+    await host.keyboard.press("Escape");
     await configure(g, "gartic");
     await expect.poll(() => g.room.phase).toBe("seed");
 
@@ -513,6 +515,7 @@ test("word library browser opens, shows packs with samples, and the host can pic
       .locator(".lobby-mode")
       .filter({ hasText: "Gartic Sounds" })
       .click();
+    await host.getByRole("button", { name: "Room settings" }).click();
     await host.getByRole("button", { name: "Browse the word library" }).click();
     await expect(
       host.getByRole("heading", { name: "Word library" }),
@@ -529,9 +532,9 @@ test("word library browser opens, shows packs with samples, and the host can pic
       .click();
     await expect.poll(() => g.room.settings.wordPack).toBe("people");
     await host.keyboard.press("Escape");
-    await expect(
-      host.getByText("Words come from: Famous people."),
-    ).toBeVisible();
+    await expect(host.locator(".settings-summary")).toContainText(
+      "Famous people words",
+    );
     expect(g.errors).toEqual([]);
   } finally {
     await g.close();
@@ -568,8 +571,10 @@ test("Classic: the performer picks from 4 or 5 one-or-two-word choices, easiest 
   const g = await group(browser, 3);
   try {
     const host = g.pages[0];
+    await host.getByRole("button", { name: "Room settings" }).click();
     await host.getByRole("radio", { name: "5 words" }).click();
     await expect.poll(() => g.room.settings.choices).toBe(5);
+    await host.keyboard.press("Escape");
     await configure(g, "classic");
     await expect.poll(() => g.room.phase).toBe("choose");
     const performer = pageFor(g, g.room.performerIds[0]);
@@ -586,12 +591,47 @@ test("Classic: the performer picks from 4 or 5 one-or-two-word choices, easiest 
     await g.close();
   }
 });
+test("room settings drawer: timing, shuffles and helpers are tunable and the lobby summary follows", async ({
+  browser,
+}) => {
+  const g = await group(browser, 3);
+  try {
+    const [host, guest] = g.pages;
+    await host.getByRole("button", { name: "Room settings" }).click();
+    await host
+      .getByRole("radiogroup", { name: "Performance time" })
+      .getByRole("radio", { name: "60s" })
+      .click();
+    await host.getByRole("radio", { name: "3 shuffles" }).click();
+    await host.getByRole("radio", { name: "30s" }).last().click();
+    await host.getByLabel("Show guessers a small hint").uncheck();
+    await host.getByLabel("Faster guesses earn more points").uncheck();
+    await expect.poll(() => g.room.settings.performanceSeconds).toBe(60);
+    await expect.poll(() => g.room.settings.shuffles).toBe(3);
+    await expect.poll(() => g.room.settings.chooseSeconds).toBe(30);
+    await expect.poll(() => g.room.settings.hints).toBe(false);
+    await expect.poll(() => g.room.settings.speedBonus).toBe(false);
+    await host.keyboard.press("Escape");
+    await expect(host.locator(".settings-summary")).toContainText("60s turns");
+    await expect(guest.locator(".settings-summary")).toContainText("60s turns");
+    await configure(g, "classic");
+    await expect.poll(() => g.room.phase).toBe("choose");
+    const performer = pageFor(g, g.room.performerIds[0]);
+    await expect(
+      performer.getByRole("button", { name: /Shuffle words \(3 left\)/ }),
+    ).toBeVisible();
+    expect(g.errors).toEqual([]);
+  } finally {
+    await g.close();
+  }
+});
 test("spicy pack needs the 18+ confirmation and shows a banner to everyone", async ({
   browser,
 }) => {
   const g = await group(browser, 2);
   try {
     const [host, guest] = g.pages;
+    await host.getByRole("button", { name: "Room settings" }).click();
     await host.getByRole("button", { name: "Browse the word library" }).click();
     await expect(
       host.getByRole("heading", { name: "Word library" }),
@@ -628,9 +668,9 @@ test("every game mode on the landing page is clickable and starts a room in that
     const page = await ctx.newPage();
     try {
       await page.goto(base);
-      const trigger = ["classic", "gartic"].includes(key)
-        ? page.locator(".posters .poster").filter({ hasText: name })
-        : page.locator(".land-chip").filter({ hasText: name });
+      const trigger = page
+        .locator(".posters .poster")
+        .filter({ hasText: name });
       await expect(trigger).toBeVisible();
       await expect(trigger).toBeEnabled();
       await trigger.click();
