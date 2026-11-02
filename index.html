@@ -2,8 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0e0e1b" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#f5eddb" />
     <meta
       name="description"
       content="A very unserious game for your very best voices. Make sounds, guess your friends, and see where the story goes."
@@ -14,8 +17,9 @@
       try {
         var d = document.documentElement;
         var t = localStorage.getItem("sd-theme");
-        if (t) d.dataset.theme = t;
-        if (localStorage.getItem("sd-reduce-motion") === "1") d.dataset.motion = "reduce";
+        d.dataset.theme = t || "paper";
+        if (localStorage.getItem("sd-reduce-motion") === "1")
+          d.dataset.motion = "reduce";
       } catch (e) {}
     </script>
   </head>

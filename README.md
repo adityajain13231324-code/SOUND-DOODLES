@@ -2,7 +2,7 @@
 
 A browser party game for 2–8 friends: you get a prompt, you make the sound, your friends try to work it out.
 Six modes (Classic, Gartic Sounds, Foley and Ranking start from 2 players; Duo Orchestra and Sound Detective need 4): **Classic** and **Gartic Sounds** (flagship), plus Duo Orchestra, Sound Detective, Five-Second Foley and Blind Ranking.
-Four themes: Midnight Studio (default), Paper Playground, Neon Arcade, Sunset Lounge. No accounts needed.
+Four themes: Paper Playground (default), Midnight Studio, Neon Arcade, Sunset Lounge. No accounts needed.
 
 ## Run it
 

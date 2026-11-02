@@ -65,9 +65,7 @@ export function App() {
     [connected, setConnected] = useState(false),
     [modal, setModal] = useState(initialCode ? "join" : null),
     [error, setError] = useState(""),
-    [theme, setTheme] = useState(
-      localStorage.getItem("sd-theme") || "midnight",
-    ),
+    [theme, setTheme] = useState(localStorage.getItem("sd-theme") || "paper"),
     [audioStatus, setAudioStatus] = useState(""),
     [muted, setMuted] = useState(false),
     [busy, setBusy] = useState(false);
