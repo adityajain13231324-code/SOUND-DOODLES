@@ -1,6 +1,7 @@
 import { randomInt, randomUUID } from "node:crypto";
 import { prompts, matchPrompt } from "./prompts.js";
 import { MODES, AVATARS } from "../shared/modes.js";
+import { WORD_SETTINGS, wordsFor, cleanStartingWord } from "./words.js";
 
 export class GameError extends Error {}
 export const AWARD_CATEGORIES = [
@@ -58,6 +59,7 @@ export class Room {
       performanceSeconds: 40,
       customPrompts: false,
       awards: false,
+      wordPack: "mixed",
     };
     this.reactions = [];
     this.replay = 0;
@@ -117,6 +119,21 @@ export class Room {
     this.reactions = [];
     this.touched = this.now();
   }
+  /** A starting word for Gartic: from the chosen library pack, never repeated within the recent past. */
+  drawWord() {
+    const words = wordsFor(this.settings.wordPack || "mixed");
+    if (!words) return this.draw().phrase;
+    this.recentWords ||= [];
+    let pool = words.filter((w) => !this.recentWords.includes(w));
+    if (!pool.length) {
+      this.recentWords = [];
+      pool = words;
+    }
+    const word = pool[randomInt(pool.length)];
+    this.recentWords.push(word);
+    this.recentWords = this.recentWords.slice(-300);
+    return word;
+  }
   draw(mode = this.settings.mode) {
     let pool = prompts.filter(
       (p) =>
@@ -167,6 +184,7 @@ export class Room {
     this.autoplay = false;
     this.awardBallots = {};
     this.awards = null;
+    this.shuffles = {};
     if (mode === "gartic") {
       this.chainRounds = this.settings.chainLength
         ? Math.min(this.ids.length, this.settings.chainLength)
@@ -179,7 +197,7 @@ export class Room {
             id: randomUUID(),
             owner: id,
             entries: [
-              { type: "text", text: this.draw().phrase, author: id, round: -1 },
+              { type: "text", text: this.drawWord(), author: id, round: -1 },
             ],
           },
         ]),
@@ -306,6 +324,10 @@ export class Room {
         "Choose valid room settings.",
       );
       requireThat(
+        s.wordPack === undefined || WORD_SETTINGS.includes(s.wordPack),
+        "Choose a word pack from the library.",
+      );
+      requireThat(
         [1, 2, 3].includes(s.rounds) &&
           [0, 3, 4].includes(s.chainLength) &&
           [30, 40, 60].includes(s.performanceSeconds),
@@ -319,6 +341,7 @@ export class Room {
         performanceSeconds: s.performanceSeconds,
         customPrompts: !!s.customPrompts,
         awards: !!s.awards,
+        wordPack: s.wordPack ?? "mixed",
       };
       this.players.forEach((p) => (p.ready = false));
       return;
@@ -468,6 +491,10 @@ export class Room {
           audioId: data.audioId,
           author: id,
         };
+      } else if (this.phase === "seed") {
+        const word = cleanStartingWord(data.text);
+        requireThat(word, "Use one or two words, not a sentence.");
+        this.submissions[id] = { type: "text", text: word, author: id };
       } else {
         requireThat(
           typeof data.text === "string" &&
@@ -482,6 +509,22 @@ export class Room {
         };
       }
       this.maybeSubmitted();
+      return;
+    }
+    if (event === "shuffleSeed") {
+      participant();
+      requireThat(
+        this.phase === "seed",
+        "Shuffling is only open while choosing starting words.",
+      );
+      requireThat(!this.submissions[id], "You already chose your word.");
+      this.shuffles ||= {};
+      requireThat(
+        (this.shuffles[id] || 0) < 3,
+        "No more shuffles. Write your own or keep this one.",
+      );
+      this.shuffles[id] = (this.shuffles[id] || 0) + 1;
+      this.chains[id].entries[0].text = this.drawWord();
       return;
     }
     if (event === "award") {
@@ -959,8 +1002,10 @@ export class Room {
       v.contributionRound = this.contributionRound;
       v.chainRounds = this.chainRounds;
       if (["record", "interpret"].includes(this.phase)) v.task = this.task(id);
-      if (this.phase === "seed" && this.ids.includes(id))
+      if (this.phase === "seed" && this.ids.includes(id)) {
         v.seed = this.chains[id].entries[0].text;
+        v.seedShuffles = 3 - (this.shuffles?.[id] || 0);
+      }
       if (["awards", "results"].includes(this.phase) && this.chains) {
         v.awardChains = Object.values(this.chains).map((c) => ({
           id: c.id,

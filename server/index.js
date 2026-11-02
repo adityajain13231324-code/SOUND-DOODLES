@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { Server } from "socket.io";
 import { Room, GameError } from "./game.js";
+import { libraryOverview } from "./words.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export async function createApp({
@@ -67,6 +68,10 @@ export async function createApp({
     return { room, player };
   };
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
+  // Word library overview: sizes and a few random samples per pack, never the full list.
+  app.get("/api/words/library", (_req, res) =>
+    res.set("Cache-Control", "no-store").json(libraryOverview(6)),
+  );
   app.get("/api/ice", (_req, res) => {
     const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
     if (process.env.TURN_URL)

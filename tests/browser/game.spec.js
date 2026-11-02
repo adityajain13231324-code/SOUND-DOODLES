@@ -464,6 +464,79 @@ test("two players can play Gartic Sounds to the end", async ({ browser }) => {
     await g.close();
   }
 });
+test("Gartic own-word mode: type one or two words, sentences are refused, shuffle is limited", async ({
+  browser,
+}) => {
+  const g = await group(browser, 2);
+  try {
+    const [host, guest] = g.pages;
+    await host
+      .locator(".lobby-mode")
+      .filter({ hasText: "Gartic Sounds" })
+      .click();
+    await host.getByRole("radio", { name: /We write our own/ }).click();
+    await expect.poll(() => g.room.settings.customPrompts).toBe(true);
+    await configure(g, "gartic");
+    await expect.poll(() => g.room.phase).toBe("seed");
+
+    const box = host.getByLabel("Your starting word");
+    await box.fill("a very loud dog");
+    await expect(host.getByText("That’s a sentence")).toBeVisible();
+    await expect(
+      host.getByRole("button", { name: "Start this chain" }),
+    ).toBeDisabled();
+    await box.fill("Disco llama");
+    await expect(host.getByText("2 / 2 words")).toBeVisible();
+    await host.getByRole("button", { name: "Start this chain" }).click();
+    await expect(
+      host.getByRole("heading", { name: "Beautifully done." }),
+    ).toBeVisible();
+
+    await guest.getByRole("button", { name: /Shuffle/ }).click();
+    await expect.poll(() => Object.values(g.room.shuffles || {})[0]).toBe(1);
+    await guest.getByRole("button", { name: /^Keep/ }).click();
+    await expect.poll(() => g.room.phase).toBe("record");
+    const hostId = g.room.players[0].id;
+    expect(g.room.chains[hostId].entries[0].text).toBe("Disco llama");
+    expect(g.errors).toEqual([]);
+  } finally {
+    await g.close();
+  }
+});
+test("word library browser opens, shows packs with samples, and the host can pick one", async ({
+  browser,
+}) => {
+  const g = await group(browser, 2);
+  try {
+    const host = g.pages[0];
+    await host
+      .locator(".lobby-mode")
+      .filter({ hasText: "Gartic Sounds" })
+      .click();
+    await host.getByRole("button", { name: "Browse the word library" }).click();
+    await expect(
+      host.getByRole("heading", { name: "Word library" }),
+    ).toBeVisible();
+    await expect(host.getByText(/words across \d+ packs/)).toBeVisible();
+    await expect(host.getByRole("heading", { name: "Animals" })).toBeVisible();
+    await expect(
+      host.getByRole("list", { name: "Sample words from Animals" }),
+    ).toBeVisible();
+    await host
+      .locator(".lib-card")
+      .filter({ hasText: "Famous people" })
+      .getByRole("button")
+      .click();
+    await expect.poll(() => g.room.settings.wordPack).toBe("people");
+    await host.keyboard.press("Escape");
+    await expect(
+      host.getByText("Words come from: Famous people."),
+    ).toBeVisible();
+    expect(g.errors).toEqual([]);
+  } finally {
+    await g.close();
+  }
+});
 for (const mode of ["duo", "detective", "foley", "ranking"])
   test(`${mode}: complete browser match to results`, async ({ browser }) => {
     const g = await group(browser);
