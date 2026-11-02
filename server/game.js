@@ -1,7 +1,14 @@
 import { randomInt, randomUUID } from "node:crypto";
 import { prompts, matchPrompt } from "./prompts.js";
 import { MODES, AVATARS } from "../shared/modes.js";
-import { WORD_SETTINGS, wordsFor, cleanStartingWord } from "./words.js";
+import {
+  WORD_SETTINGS,
+  wordsFor,
+  cleanStartingWord,
+  libraryEntries,
+  libraryPrompt,
+  DIFFICULTY_RANK,
+} from "./words.js";
 
 export class GameError extends Error {}
 export const AWARD_CATEGORIES = [
@@ -60,6 +67,8 @@ export class Room {
       customPrompts: false,
       awards: false,
       wordPack: "mixed",
+      choices: 4,
+      adultsOnly: false,
     };
     this.reactions = [];
     this.replay = 0;
@@ -118,6 +127,62 @@ export class Room {
     this.deadline = seconds ? this.now() + seconds * 1000 * this.scale : null;
     this.reactions = [];
     this.touched = this.now();
+  }
+  /**
+   * Classic, Skribbl style: deal 3 to 5 words to pick from, easiest first, with a spread of difficulties.
+   * "sounds" uses the curated sound ideas, a pack id uses that pack, "mixed" blends sound ideas with the family-friendly library.
+   */
+  drawChoices(count = this.settings.choices || 4) {
+    const setting = this.settings.wordPack || "mixed";
+    const level = this.settings.difficulty;
+    const fits = (p) =>
+      level === "mixed" ||
+      (level === "easy" ? p.difficulty === "easy" : p.difficulty !== "easy");
+    const curated =
+      setting === "sounds" || setting === "mixed"
+        ? prompts.filter(
+            (p) =>
+              p.modes.includes("classic") &&
+              p.phrase.trim().split(/\s+/).length <= 2,
+          )
+        : [];
+    const entries = setting === "sounds" ? [] : libraryEntries(setting);
+    const wantedOrder = ["easy", "easy", "medium", "hard", "medium"];
+    const chosen = [];
+    const taken = new Set();
+    const pickOne = (wanted) => {
+      for (let tries = 0; tries < 120; tries++) {
+        const fromCurated =
+          curated.length && (!entries.length || randomInt(10) < 4);
+        const p = fromCurated
+          ? curated[randomInt(curated.length)]
+          : (() => {
+              const e = entries[randomInt(entries.length)];
+              return libraryPrompt(e.word, e.packId);
+            })();
+        if (taken.has(p.id) || this.recent.includes(p.id)) continue;
+        if (tries < 90 && !fits(p)) continue;
+        if (tries < 40 && wanted && p.difficulty !== wanted) continue;
+        return p;
+      }
+      return null;
+    };
+    for (let i = 0; i < count; i++) {
+      let p = pickOne(wantedOrder[i]);
+      if (!p) {
+        this.recent = [];
+        p = pickOne(null);
+      }
+      if (!p) break;
+      taken.add(p.id);
+      chosen.push(p);
+    }
+    chosen.sort(
+      (a, b) => DIFFICULTY_RANK[a.difficulty] - DIFFICULTY_RANK[b.difficulty],
+    );
+    this.recent.push(...chosen.map((p) => p.id));
+    this.recent = this.recent.slice(-200);
+    return chosen;
   }
   /** A starting word for Gartic: from the chosen library pack, never repeated within the recent past. */
   drawWord() {
@@ -235,7 +300,7 @@ export class Room {
       const performers = this.ids.filter((id) => this.player(id)?.mic);
       this.performerIds = [performers[this.round % performers.length]];
       this.eligible = this.ids.filter((id) => !this.performerIds.includes(id));
-      this.choices = Array.from({ length: 3 }, () => this.draw());
+      this.choices = this.drawChoices();
       this.setPhase("choose", 20);
     } else if (mode === "duo") {
       this.performerIds = [
@@ -328,6 +393,14 @@ export class Room {
         "Choose a word pack from the library.",
       );
       requireThat(
+        s.wordPack !== "spicy" || s.adultsOnly === true,
+        "The spicy pack needs the 18+ confirmation.",
+      );
+      requireThat(
+        s.choices === undefined || [3, 4, 5].includes(s.choices),
+        "Choose 3, 4 or 5 words to pick from.",
+      );
+      requireThat(
         [1, 2, 3].includes(s.rounds) &&
           [0, 3, 4].includes(s.chainLength) &&
           [30, 40, 60].includes(s.performanceSeconds),
@@ -342,6 +415,8 @@ export class Room {
         customPrompts: !!s.customPrompts,
         awards: !!s.awards,
         wordPack: s.wordPack ?? "mixed",
+        choices: s.choices ?? 4,
+        adultsOnly: s.wordPack === "spicy" && s.adultsOnly === true,
       };
       this.players.forEach((p) => (p.ready = false));
       return;
@@ -401,7 +476,7 @@ export class Room {
         "One shuffle is allowed per turn.",
       );
       this.skips++;
-      this.choices = Array.from({ length: 3 }, () => this.draw());
+      this.choices = this.drawChoices();
       return;
     }
     if (event === "guess") {
@@ -970,11 +1045,14 @@ export class Room {
       v.performerIds = this.performerIds;
       v.progress = this.progress?.[id];
       if (this.performerIds?.includes(id) && this.phase === "choose") {
-        v.choices = this.choices.map(({ id, phrase, difficulty }) => ({
-          id,
-          phrase,
-          difficulty,
-        }));
+        v.choices = this.choices.map(
+          ({ id, phrase, difficulty, category }) => ({
+            id,
+            phrase,
+            difficulty,
+            category,
+          }),
+        );
         v.skips = this.skips;
       }
       if (

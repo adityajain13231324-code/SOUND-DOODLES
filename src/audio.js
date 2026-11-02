@@ -33,7 +33,13 @@ export function cue(name) {
 }
 export const mic = {
   stream: null,
-  device: "",
+  device: (() => {
+    try {
+      return localStorage.getItem("sd-mic") || "";
+    } catch {
+      return "";
+    }
+  })(),
   performance: true,
   muted: false,
   request: null,
@@ -58,6 +64,15 @@ export const mic = {
       this.stream = await this.request;
       return this.stream;
     } catch (e) {
+      // A remembered microphone that is no longer plugged in: fall back to the system default once.
+      if (e.name === "OverconstrainedError" && this.device) {
+        this.device = "";
+        try {
+          localStorage.removeItem("sd-mic");
+        } catch {}
+        this.request = null;
+        return this.acquire();
+      }
       throw new Error(
         e.name === "NotAllowedError"
           ? "Microphone permission was denied. Allow it in your browser settings, or join as a guesser or spectator."

@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
+  Flame,
   Info,
   LogOut,
   Mic,
@@ -12,7 +13,7 @@ import {
 import { MODES } from "../../shared/modes.js";
 import { mic, createMeter } from "../audio.js";
 import { Poster } from "../ui/Poster.jsx";
-import { StartingWords } from "../ui/StartingWords.jsx";
+import { ClassicWords, StartingWords } from "../ui/StartingWords.jsx";
 import { PlayerCard, GhostSlot } from "../ui/PlayerCard.jsx";
 import { RoomCodeChip } from "../ui/RoomCodeChip.jsx";
 import { Drawer, Popover } from "../ui/overlays.jsx";
@@ -225,6 +226,18 @@ export function Lobby({ state, me, host, act, onMic, notify, onLeave }) {
               />
             ))}
           </div>
+        )}
+        {state.settings.adultsOnly && (
+          <div className="adult-banner" role="status">
+            <Flame size={18} aria-hidden="true" />
+            <span>
+              <strong>Spicy words are on.</strong> Flirty and cheeky, for 18+
+              groups only. The host can switch back anytime.
+            </span>
+          </div>
+        )}
+        {state.settings.mode === "classic" && (
+          <ClassicWords settings={state.settings} host={host} change={change} />
         )}
         {state.settings.mode === "gartic" && (
           <StartingWords

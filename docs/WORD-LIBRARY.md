@@ -34,3 +34,25 @@ Edit the comma-separated lists in `server/words.js`. `npm test` checks that the 
 ## Tests
 
 Unit: library integrity, the word rule, own-word seed phase, pack draws, shuffle limit, no repeats. Browser: own-word flow with two sessions and the library browser.
+
+## Classic word choices (Skribbl style)
+
+- The performer is dealt **3, 4 or 5 words** (host setting, default 4), **easiest first**, each tagged EASY, MEDIUM or HARD with its category.
+- Classic only deals **one- or two-word** prompts. Scenes and sentences ("Dog chasing a bouncing ball") are never dealt in Classic.
+- Words come from the room's pack: "Everything" blends the sound ideas (about 40%) with the family-friendly library, "Sound ideas" uses only the curated list,
+  and any other pack deals only from that pack. Library words are guessed by their name; famous people and characters also accept the surname or character name alone.
+- Hints for library words are the category, then the letter count.
+
+## Spicy pack (18+)
+
+- A 117-word pack of flirty, cheeky and mildly naughty words for adult groups. It is suggestive and never explicit.
+- **Opt-in only.** It is never part of "Everything". The host must pick it in the word library and confirm "We're all adults"; the server refuses the pack without
+  that confirmation. Every player sees a "Spicy words are on" banner in the lobby, and switching to another pack turns it off.
+- The library never previews its words, so opening the browser cannot surprise anyone.
+- Works for both Classic and Gartic Sounds.
+
+## Microphone list
+
+The mic check lists microphones as soon as it opens and refreshes when hardware is plugged in or removed. Browsers hide device names until microphone permission is
+granted, so unnamed devices appear as "Microphone 1, 2…" with a **Find my microphones** button. The chosen microphone is remembered, and if it is unplugged the
+game falls back to the system default.
