@@ -949,7 +949,7 @@ h3 {
 }
 .theme-dots {
   display: grid;
-  grid-template-columns: repeat(2, 11px);
+  grid-template-columns: repeat(3, 11px);
   gap: 3px;
 }
 .theme-dots i {
@@ -986,7 +986,17 @@ h3 {
 }
 @media (max-width: 559px) {
   .theme-button {
-    padding-inline: 10px;
+    padding-inline: 8px;
+  }
+  .theme-dots {
+    grid-template-columns: repeat(3, 8px);
+    gap: 2px;
+  }
+  .theme-dots i {
+    width: 8px;
+    height: 8px;
+    border-width: 1px;
+    outline-width: 1px;
   }
   .theme-label {
     display: none;
@@ -1140,5 +1150,17 @@ h3 {
 @media (max-width: 559px) {
   .ping b {
     font-size: 11px;
+  }
+}
+/* Very narrow phones: the ping badge shrinks to its coloured dot so the header never scrolls sideways. */
+@media (max-width: 420px) {
+  .ping b {
+    display: none;
+  }
+  .ping {
+    padding: 4px 8px;
+  }
+  .header-right {
+    gap: 6px;
   }
 }

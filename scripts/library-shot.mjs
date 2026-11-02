@@ -22,7 +22,9 @@ await page.getByRole("button", { name: "Browse the word library" }).click();
 const card = (name) => page.locator(".lib-card").filter({ hasText: name });
 await card("Animals").getByRole("button").click();
 await card("Food").getByRole("button", { name: "Add to the mix" }).click();
-await card("Sound ideas").getByRole("button", { name: "Add to the mix" }).click();
+await card("Sound ideas")
+  .getByRole("button", { name: "Add to the mix" })
+  .click();
 await page.waitForTimeout(900);
 await page.screenshot({ path: "shots/library-mix.png" });
 await browser.close();

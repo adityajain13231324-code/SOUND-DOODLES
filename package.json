@@ -8,7 +8,8 @@
     "build": "vite build",
     "start": "node server/index.js --production",
     "test": "node --test tests/*.test.js",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "check:contrast": "node scripts/contrast.mjs --strict"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",

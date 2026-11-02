@@ -13,6 +13,8 @@ export const themes = [
   ["paper", "Paper Playground", "Good old scribbly fun."],
   ["neon", "Neon Arcade", "Turn up the electric."],
   ["sunset", "Sunset Lounge", "Stay for one more round."],
+  ["sky", "Cloud Nine", "Light, breezy and cool."],
+  ["pop", "Bubblegum Pop", "Hearts, sparkle, zero chill."],
 ];
 export const initialCode =
   new URLSearchParams(location.search).get("room") || "";

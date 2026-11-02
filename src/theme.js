@@ -6,12 +6,16 @@ export const THEME_LIST = [
   { key: "midnight", name: "Midnight Studio", blurb: "A little after hours." },
   { key: "neon", name: "Neon Arcade", blurb: "Turn up the electric." },
   { key: "sunset", name: "Sunset Lounge", blurb: "Stay for one more round." },
+  { key: "sky", name: "Cloud Nine", blurb: "Light, breezy and cool." },
+  { key: "pop", name: "Bubblegum Pop", blurb: "Hearts, sparkle, zero chill." },
 ];
 const META = {
   midnight: "#0e0e1b",
   neon: "#060a1c",
   paper: "#f5eddb",
   sunset: "#2a1238",
+  sky: "#cfe7fb",
+  pop: "#ffd9ea",
 };
 
 export const prefersReducedMotion = () =>

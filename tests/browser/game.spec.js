@@ -160,7 +160,7 @@ async function recordAll(g) {
   await expire(g.room);
 }
 
-test("landing, four persistent themes, mobile layout and keyboard entry", async ({
+test("landing, six persistent themes (Paper by default), mobile layout and keyboard entry", async ({
   page,
 }) => {
   const errors = [];
@@ -169,6 +169,7 @@ test("landing, four persistent themes, mobile layout and keyboard entry", async 
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
     "Make some",
   );
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "paper");
   await page.screenshot({
     path: "../../work/landing-desktop.png",
     fullPage: true,
@@ -178,6 +179,8 @@ test("landing, four persistent themes, mobile layout and keyboard entry", async 
     ["neon", "Neon Arcade"],
     ["sunset", "Sunset Lounge"],
     ["midnight", "Midnight Studio"],
+    ["sky", "Cloud Nine"],
+    ["pop", "Bubblegum Pop"],
   ]) {
     await page
       .getByRole("button", { name: "Change theme", exact: true })

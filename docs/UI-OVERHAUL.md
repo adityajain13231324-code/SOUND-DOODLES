@@ -76,3 +76,10 @@ in every theme. Paper's mint and coral were darkened so they pass as text on its
 - **Gartic reveal** keeps its existing timeline layout (restyled by the themes); the full "chain unfolds with connecting waveform thumbnails" playlist was not rebuilt.
 - **Real-device checks** (touch targets on physical phones, TV casting, real microphones) were not done; everything was verified in emulated browsers with simulated microphones.
 - **Unused imports** left by the automated file split in a few screen files are harmless but could be cleaned with a linter.
+
+## Two more themes: Cloud Nine and Bubblegum Pop
+
+- **Cloud Nine** (`sky`): light, airy sky blue. A sky gradient, a pale sun and drifting clouds; DM Sans display type; pill buttons; slow, soft motion.
+- **Bubblegum Pop** (`pop`): pink with polka dots and slowly rising hearts; Bricolage Grotesque; candy-style pill buttons with a pressed-down shadow; bouncy motion.
+- Both are token blocks in `tokens.css` (backdrops and personality in `styles/themes-light.css`) and appear in the picker with a cloud and a heart emblem. **Paper remains the default.**
+- `npm run check:contrast` (and a unit test) checks every theme for WCAG AA: text, muted text, accent buttons and accent text.

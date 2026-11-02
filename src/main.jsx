@@ -15,6 +15,7 @@ import "./styles/stage.css";
 import "./styles/ui.css";
 import "./styles/screens.css";
 import "./styles/game.css";
+import "./styles/themes-light.css";
 import "./styles/styleguide.css";
 import "./styles/words.css";
 import { syncMusic } from "./ambience.js";
