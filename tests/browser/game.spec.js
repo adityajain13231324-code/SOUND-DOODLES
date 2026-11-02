@@ -750,11 +750,18 @@ test("spicy pack needs the 18+ confirmation and shows a banner to everyone", asy
     const card = host.locator(".lib-card").filter({ hasText: "Spicy" });
     await expect(card.getByText("18+").first()).toBeVisible();
     await expect(card.locator(".lib-samples")).toHaveCount(0);
-    await card.getByRole("button", { name: "Use this pack" }).click();
+    await card.getByRole("button", { name: "Add to the mix" }).click();
     await expect(host.getByText("Is everyone here 18 or older?")).toBeVisible();
     expect(g.room.settings.wordPacks).not.toContain("spicy");
     await host.getByRole("button", { name: "We’re all adults" }).click();
-    await expect.poll(() => g.room.settings.wordPacks).toEqual(["spicy"]);
+    // Spicy stacks on top of Everything; it does not replace it
+    await expect
+      .poll(() => g.room.settings.wordPacks)
+      .toEqual(["mixed", "spicy"]);
+    await expect(
+      host.locator(".lib-card.chosen").filter({ hasText: "Everything" }),
+    ).toHaveCount(1);
+    await expect(host.locator(".lib-card.chosen")).toHaveCount(2);
     expect(g.room.settings.adultsOnly).toBe(true);
     await host.keyboard.press("Escape");
     await expect(guest.getByText("Spicy words are on.")).toBeVisible();

@@ -69,6 +69,14 @@ Guessing should not be a chore, so every one- or two-word prompt accepts more th
 - Weak words never count alone: adjectives and fillers like "sultry", "heavy", "hot", "voice", "of". A few hand-written synonyms cover cases like "wolf whistle" for Cat Call.
 - Single typos on words of five letters or more are still forgiven. Scenes (Duo) still need every part.
 
+An 18+ pack stacks on top of Everything ("Everything + Spicy"); tapping a family pack narrows Everything to that pack but keeps any 18+ pack you added. An 18+ pack that was added on purpose
+gets about 40% of the library picks, so it is really present.
+
+## Older open pages
+
+The server keeps a legacy `wordPack` mirror in the room settings and honors a changed `wordPack` from a page still running an older build, and every update carries a build id. A page that stays
+open across a deploy shows "A new version of the game is ready · Refresh".
+
 ## Turns in Classic
 
 Like Skribbl, everyone takes turns on the mic. A player who skipped the mic check still gets turns: their browser asks for the microphone while they choose a word.

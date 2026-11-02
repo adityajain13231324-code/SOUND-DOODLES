@@ -7,7 +7,7 @@ import { initialCode, readStored } from "./support.js";
 import { applyTheme, watchVisibility } from "./theme.js";
 import { StageBackground } from "./ui/StageBackground.jsx";
 import { ThemePicker } from "./ui/ThemePicker.jsx";
-import { ReconnectPill } from "./ui/overlays.jsx";
+import { ReconnectPill, UpdatePill } from "./ui/overlays.jsx";
 import { Cast } from "./ui/Cast.jsx";
 import { TimerRing } from "./ui/kit.jsx";
 import { CountdownOverlay } from "./ui/ceremony.jsx";
@@ -74,6 +74,7 @@ export function App() {
   const sessionRef = useRef(session),
     stateRef = useRef(state),
     previousPhase = useRef(""),
+    firstBuild = useRef(null),
     [now, setNow] = useState(Date.now());
   sessionRef.current = session;
   stateRef.current = state;
@@ -158,6 +159,7 @@ export function App() {
       sfx("join");
     seenCount.current = playerCount;
   }, [playerCount]);
+  if (state?.build && !firstBuild.current) firstBuild.current = state.build;
   const counting = !!state?.deadline;
   useEffect(() => {
     if (!counting) return;
@@ -289,8 +291,10 @@ export function App() {
   const [wantedMode, setWantedMode] = useState(null);
   useEffect(() => {
     if (!wantedMode || !state || state.phase !== "lobby") return;
-    if (host && state.settings.mode !== wantedMode && MODES[wantedMode])
-      act("settings", { settings: { ...state.settings, mode: wantedMode } });
+    if (host && state.settings.mode !== wantedMode && MODES[wantedMode]) {
+      const { wordPack, ...current } = state.settings;
+      act("settings", { settings: { ...current, mode: wantedMode } });
+    }
     setWantedMode(null);
   }, [wantedMode, state?.phase, host]);
   const me = state?.players.find((p) => p.id === state.you);
@@ -381,6 +385,10 @@ export function App() {
           </button>
         </div>
       </header>
+      {connected &&
+        state?.build &&
+        firstBuild.current &&
+        state.build !== firstBuild.current && <UpdatePill />}
       {!connected && state && (
         <ReconnectPill
           onRetry={() => {
