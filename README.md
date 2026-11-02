@@ -23,7 +23,7 @@ npm run build && npm start
 ## Test it
 
 ```bash
-npm test                 # 45 unit and socket tests
+npm test                 # 46 unit and socket tests
 npx playwright install chromium   # first time only (tests use the Chrome channel)
 npm run test:browser     # 17 browser tests: four sessions per mode, simulated microphones
 node scripts/shots.mjs   # screenshots of every theme at 390, 768 and 1440 px into shots/

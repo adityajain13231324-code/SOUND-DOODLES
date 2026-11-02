@@ -182,6 +182,49 @@ const scenes = [
   ["Kettle launching into space", ["kettle"], ["space", "launching"]],
 ];
 const modes = ["classic", "gartic", "duo", "detective", "foley", "ranking"];
+
+// Words that are too weak to count as a guess on their own ("of", "hot", "voice").
+const FILLER = new Set(
+  "of the a an and in on at to for with by from up out off is it can will".split(
+    " ",
+  ),
+);
+const MODIFIERS = new Set(
+  `dramatic fake heavy loud sloppy sultry seductive flirty naughty guilty cheeky sexy romantic smooth slow big little small old new hot cold
+  red blue green black white golden silver giant mini super great grand tiny happy sad angry crazy mad wild baby sweet pleasure creaky squeaky
+  yellow pink purple orange grey gray dark light brown fried mount fresh
+  bedroom electric sound noise noises voice song music`.split(/\s+/),
+);
+/**
+ * Extra things a guesser might say for a one- or two-word prompt, so guessing is not a chore:
+ * each meaningful word alone ("whisper" for "Sultry Whisper"), and the words run together ("catcall" for "Cat Call").
+ * Hyphenated words split apart ("Walk-Of-Shame") unless they are names ("Spider-Man", splitHyphens off).
+ * With lastOnly (famous people, characters) only the final word counts.
+ */
+export function autoAliases(
+  phrase,
+  { lastOnly = false, splitHyphens = false } = {},
+) {
+  const units = String(phrase)
+    .trim()
+    .split(splitHyphens ? /[\s-]+/ : /\s+/);
+  const out = new Set();
+  const usable = (n) => n.length >= 3 && !FILLER.has(n) && !MODIFIERS.has(n);
+  if (units.length >= 2 && units.length <= 4) {
+    const pool = lastOnly ? units.slice(-1) : units;
+    for (const unit of pool) {
+      const n = normalize(unit);
+      if (usable(n)) out.add(n);
+    }
+    if (!lastOnly && units.length === 2) {
+      const joined = units.map(normalize).join("");
+      if (joined.length >= 5) out.add(joined);
+    }
+  }
+  const whole = normalize(phrase);
+  out.delete(whole);
+  return [...out];
+}
 export const prompts = [
   ...[
     ...everyday.map((s) => [s, "Everyday"]),
@@ -194,7 +237,13 @@ export const prompts = [
       phrase,
       category,
       difficulty: "easy",
-      aliases: [phrase, ...aliases],
+      aliases: [
+        ...new Set([
+          phrase,
+          ...aliases,
+          ...autoAliases(phrase, { splitHyphens: true }),
+        ]),
+      ],
       components: [],
       hints: [
         category,
@@ -238,14 +287,37 @@ function distance(a, b) {
   }
   return d[b.length];
 }
+/** Rough word stem so "moaning", "moans" and "moan" count as the same word. */
+function stem(word) {
+  let w = word;
+  const cut = (n) => (w.length - n >= 3 ? w.slice(0, -n) : w);
+  if (w.endsWith("ing")) w = cut(3);
+  else if (w.endsWith("ies")) w = w.length > 4 ? `${w.slice(0, -3)}y` : w;
+  else if (w.endsWith("es") && w.length > 4) w = cut(2);
+  else if (w.endsWith("ed") && w.length > 4) w = cut(2);
+  else if (w.endsWith("s") && !w.endsWith("ss") && w.length > 3) w = cut(1);
+  if (w.endsWith("e") && w.length > 3) w = w.slice(0, -1);
+  if (w.length > 3 && w.at(-1) === w.at(-2) && !"aeiou".includes(w.at(-1)))
+    w = w.slice(0, -1);
+  return w;
+}
 function accepts(guess, alias) {
   const a = normalize(alias);
   const g = normalize(guess);
   if (` ${g} `.includes(` ${a} `)) return true;
   // A single typo only on a whole candidate of at least five characters.
-  return (
-    a.length >= 5 && Math.abs(g.length - a.length) <= 1 && distance(g, a) <= 1
-  );
+  if (
+    a.length >= 5 &&
+    Math.abs(g.length - a.length) <= 1 &&
+    distance(g, a) <= 1
+  )
+    return true;
+  // Same words in another form: "moan" for "moaning", "lions" for "lion".
+  const at = a.split(" ").map(stem);
+  const gt = g.split(" ").map(stem);
+  for (let i = 0; i + at.length <= gt.length; i++)
+    if (at.every((t, j) => t === gt[i + j])) return true;
+  return false;
 }
 export function matchPrompt(prompt, guess, previous = []) {
   const full = prompt.aliases.some((a) => accepts(guess, a));

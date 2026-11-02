@@ -58,6 +58,17 @@ In the word library the host taps packs to build a mix: "Everything" is a preset
 remove ("In the mix · remove") packs. At least one pack always stays selected. The 18+ confirmation is needed whenever Spicy joins a mix, and the banner shows for
 everyone while it is in.
 
+## Forgiving guesses
+
+Guessing should not be a chore, so every one- or two-word prompt accepts more than its exact text (`autoAliases()` in `server/prompts.js`, used for the library and the curated sound ideas):
+
+- **Any meaningful word alone**: "whisper" for Sultry Whisper, "station" for Space Station, "shame" for Walk-Of-Shame.
+- **Other word forms**: "moan", "moans" and "moaning" are the same word ("lions" for Lion, "snore" for Snoring).
+- **Words run together**: "catcall" for Cat Call, "wifi" for Wi-Fi.
+- **Famous people and characters**: the surname or last word ("Depp"), never a first name; hyphenated names such as Spider-Man stay whole.
+- Weak words never count alone: adjectives and fillers like "sultry", "heavy", "hot", "voice", "of". A few hand-written synonyms cover cases like "wolf whistle" for Cat Call.
+- Single typos on words of five letters or more are still forgiven. Scenes (Duo) still need every part.
+
 ## Turns in Classic
 
 Like Skribbl, everyone takes turns on the mic. A player who skipped the mic check still gets turns: their browser asks for the microphone while they choose a word.
