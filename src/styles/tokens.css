@@ -220,6 +220,92 @@
   --meta-color: #2a1238;
 }
 
+/* ---------- CLOUD NINE: light, airy sky blue. Soft, slow and cool ---------- */
+[data-theme="sky"] {
+  color-scheme: light;
+  --bg: #e6f3ff;
+  --surface: #fbfdff;
+  --surface-2: #e3effa;
+  --surface-3: #cfe3f5;
+  --text: #16283d;
+  --muted: #47607a;
+  --line: #b4cde4;
+  --ink: #16283d;
+  --violet: #5457d1;
+  --mint: #12806b;
+  --coral: #c2492f;
+  --gold: #b87400;
+  --blue: #1f6fc2;
+  --on-accent: #ffffff;
+  --accent: #1f6fc2;
+  --accent-2: #0a7f9e;
+  --glow: 0 10px 30px -10px color-mix(in srgb, var(--accent) 50%, transparent);
+  --shadow: 0 18px 50px #2b6cb024;
+  --shadow-card: 0 1px 0 #fff inset, 0 14px 34px -18px #2b6cb066;
+  --r-sm: 14px;
+  --r-md: 20px;
+  --r-lg: 28px;
+  --r-xl: 38px;
+  --radius: var(--r-lg);
+  --border-w: 1px;
+  --card-border: var(--line);
+  --card-bg: color-mix(in srgb, var(--surface) 80%, transparent);
+  --blur: blur(14px);
+  --display: "DM Sans Variable", "DM Sans", sans-serif;
+  --heading-case: none;
+  --heading-track: -0.025em;
+  --tilt: 0deg;
+  --speed: 1.35;
+  --ease-ui: cubic-bezier(0.3, 0.7, 0.2, 1);
+  --ease: var(--ease-ui);
+  --stagger: 70ms;
+  --meta-color: #cfe7fb;
+}
+
+/* ---------- BUBBLEGUM POP: pink, hearts, sparkle. Bouncy and bright ---------- */
+[data-theme="pop"] {
+  color-scheme: light;
+  --bg: #ffe6f1;
+  --surface: #fff8fb;
+  --surface-2: #ffd9e9;
+  --surface-3: #ffc3dc;
+  --text: #3b1230;
+  --muted: #7a3f66;
+  --line: #f0a3c6;
+  --ink: #3b1230;
+  --violet: #8a42d1;
+  --mint: #11806c;
+  --coral: #cf2f49;
+  --gold: #b86b00;
+  --blue: #3b6fd0;
+  --on-accent: #ffffff;
+  --accent: #c8207c;
+  --accent-2: #8a42d1;
+  --glow: 0 8px 26px -8px color-mix(in srgb, var(--accent) 60%, transparent);
+  --shadow: 0 18px 46px #c8207c26;
+  --shadow-card:
+    0 5px 0 color-mix(in srgb, var(--accent) 22%, var(--surface-3)),
+    0 16px 30px -16px #c8207c55;
+  --r-sm: 16px;
+  --r-md: 22px;
+  --r-lg: 30px;
+  --r-xl: 42px;
+  --radius: var(--r-lg);
+  --border-w: 2px;
+  --card-border: var(--line);
+  --card-bg: var(--surface);
+  --blur: none;
+  --display: "Bricolage Grotesque Variable", "Bricolage Grotesque", sans-serif;
+  --heading-case: none;
+  --heading-track: -0.02em;
+  --tilt: 1deg;
+  --speed: 1;
+  --ease-ui: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: var(--ease-ui);
+  --stagger: 60ms;
+  --meta-color: #ffd9ea;
+}
+
 /* In-app "Reduce motion" mirrors the OS preference. */
 [data-motion="reduce"] *,
 [data-motion="reduce"] *::before,

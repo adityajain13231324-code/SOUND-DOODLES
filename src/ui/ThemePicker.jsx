@@ -1,10 +1,25 @@
 import React from "react";
-import { Check, Moon, PencilLine, Sunset, Zap } from "lucide-react";
+import {
+  Check,
+  Cloud,
+  Heart,
+  Moon,
+  PencilLine,
+  Sunset,
+  Zap,
+} from "lucide-react";
 import { Popover } from "./overlays.jsx";
 import { THEME_LIST } from "../theme.js";
 
 // Each place has its own little emblem, so the choice is something you want to tap.
-const EMBLEM = { paper: PencilLine, midnight: Moon, neon: Zap, sunset: Sunset };
+const EMBLEM = {
+  paper: PencilLine,
+  midnight: Moon,
+  neon: Zap,
+  sunset: Sunset,
+  sky: Cloud,
+  pop: Heart,
+};
 
 /** The header button: four colour dots (one per place) and a label, with a gentle wiggle that invites a click. */
 function ThemeButton({ theme, onClick, props, open }) {

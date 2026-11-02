@@ -2,7 +2,7 @@
 
 A browser party game for 2–8 friends: you get a prompt, you make the sound, your friends try to work it out.
 Six modes (Classic, Gartic Sounds, Foley and Ranking start from 2 players; Duo Orchestra and Sound Detective need 4): **Classic** and **Gartic Sounds** (flagship), plus Duo Orchestra, Sound Detective, Five-Second Foley and Blind Ranking.
-Four themes: Paper Playground (default), Midnight Studio, Neon Arcade, Sunset Lounge. No accounts needed.
+Six themes: Paper Playground (default), Midnight Studio, Neon Arcade, Sunset Lounge, plus the light and colourful Cloud Nine (sky blue, breezy) and Bubblegum Pop (pink, hearts, sparkle). No accounts needed.
 
 ## Run it
 
@@ -23,11 +23,11 @@ npm run build && npm start
 ## Test it
 
 ```bash
-npm test                 # 46 unit and socket tests
+npm test                 # 48 unit and socket tests
 npx playwright install chromium   # first time only (tests use the Chrome channel)
 npm run test:browser     # 18 browser tests: four sessions per mode, simulated microphones
 node scripts/shots.mjs   # screenshots of every theme at 390, 768 and 1440 px into shots/
-npm run dev              # then open /styleguide (or #/styleguide) to see every component in all four themes
+npm run dev              # then open /styleguide (or #/styleguide) to see every component in all six themes
 ```
 
 ## Audio extras
