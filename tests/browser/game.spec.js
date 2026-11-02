@@ -530,10 +530,27 @@ test("word library browser opens, shows packs with samples, and the host can pic
       .filter({ hasText: "Famous people" })
       .getByRole("button")
       .click();
-    await expect.poll(() => g.room.settings.wordPack).toBe("people");
+    await expect.poll(() => g.room.settings.wordPacks).toEqual(["people"]);
+    // a second pack is added to the mix, not swapped in
+    await host
+      .locator(".lib-card")
+      .filter({ hasText: "Animals" })
+      .getByRole("button", { name: "Add to the mix" })
+      .click();
+    await expect
+      .poll(() => g.room.settings.wordPacks)
+      .toEqual(["people", "animals"]);
+    await expect(host.locator(".lib-card.chosen")).toHaveCount(2);
+    // tapping a chosen pack removes it again
+    await host
+      .locator(".lib-card")
+      .filter({ hasText: "Famous people" })
+      .getByRole("button", { name: /remove/ })
+      .click();
+    await expect.poll(() => g.room.settings.wordPacks).toEqual(["animals"]);
     await host.keyboard.press("Escape");
     await expect(host.locator(".settings-summary")).toContainText(
-      "Famous people words",
+      "Animals words",
     );
     expect(g.errors).toEqual([]);
   } finally {
@@ -625,6 +642,35 @@ test("room settings drawer: timing, shuffles and helpers are tunable and the lob
     await g.close();
   }
 });
+test("Classic: every player gets turns, even one who never did a mic check", async ({
+  browser,
+}) => {
+  const g = await group(browser, 2);
+  try {
+    // pretend nobody did the mic check; turns must still alternate between both players
+    g.room.players.forEach((p) => (p.mic = false));
+    await configure(g, "classic");
+    const performers = [];
+    for (let turn = 0; turn < 4; turn++) {
+      await expect.poll(() => g.room.phase).toBe("choose");
+      const id = g.room.performerIds[0];
+      performers.push(id);
+      const page = pageFor(g, id);
+      await expect(
+        page.getByRole("heading", { name: "What’s your noise?" }),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "Pass this turn" }).click();
+      await expect.poll(() => g.room.phase).toBe("roundReveal");
+      await g.pages[0].getByRole("button", { name: "Next" }).click();
+    }
+    await expect.poll(() => g.room.phase).toBe("results");
+    expect(new Set(performers).size).toBe(2);
+    expect(performers[0]).not.toBe(performers[1]);
+    expect(g.errors).toEqual([]);
+  } finally {
+    await g.close();
+  }
+});
 test("spicy pack needs the 18+ confirmation and shows a banner to everyone", async ({
   browser,
 }) => {
@@ -641,9 +687,9 @@ test("spicy pack needs the 18+ confirmation and shows a banner to everyone", asy
     await expect(card.locator(".lib-samples")).toHaveCount(0);
     await card.getByRole("button", { name: "Use this pack" }).click();
     await expect(host.getByText("Is everyone here 18 or older?")).toBeVisible();
-    expect(g.room.settings.wordPack).not.toBe("spicy");
+    expect(g.room.settings.wordPacks).not.toContain("spicy");
     await host.getByRole("button", { name: "We’re all adults" }).click();
-    await expect.poll(() => g.room.settings.wordPack).toBe("spicy");
+    await expect.poll(() => g.room.settings.wordPacks).toEqual(["spicy"]);
     expect(g.room.settings.adultsOnly).toBe(true);
     await host.keyboard.press("Escape");
     await expect(guest.getByText("Spicy words are on.")).toBeVisible();

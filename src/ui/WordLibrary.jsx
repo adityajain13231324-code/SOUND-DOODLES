@@ -76,13 +76,26 @@ const EXTRA = [
 ];
 
 /** Pixel-Peek style browser: every pack as a card with a few random words to peek at. */
-export function WordLibrary({ selected, canChoose, onChoose, onClose }) {
+export function WordLibrary({ selected, canChoose, onChange, onClose }) {
   const { data, error, reload } = useLibrary();
+  const everything = selected.includes("mixed");
+  // Everything is a preset; the first pack you tap narrows it to just that pack, then taps add or remove.
+  const toggle = (id) => {
+    let next;
+    if (everything) next = [id];
+    else if (selected.includes(id)) next = selected.filter((x) => x !== id);
+    else next = [...selected, id];
+    if (!next.length) return;
+    const adults = !!data?.packs.some((p) => p.adult && next.includes(p.id));
+    onChange(next, adults);
+  };
   // The spicy pack needs a grown-up confirmation before the host can switch it on.
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = useState(null);
   const card = (p, extra) => {
     const Icon = ICONS[p.icon] || Layers;
-    const chosen = selected === p.id;
+    const chosen =
+      p.id === "mixed" ? everything : !everything && selected.includes(p.id);
+    const onlyOne = chosen && !everything && selected.length === 1;
     return (
       <article
         key={p.id}
@@ -116,7 +129,7 @@ export function WordLibrary({ selected, canChoose, onChoose, onClose }) {
             ))}
           </ul>
         )}
-        {p.adult && confirming && !chosen ? (
+        {p.adult && confirming === p.id && !chosen ? (
           <div className="lib-confirm" role="group" aria-label="Confirm 18+">
             <strong>Is everyone here 18 or older?</strong>
             <div className="lib-confirm-actions">
@@ -124,8 +137,8 @@ export function WordLibrary({ selected, canChoose, onChoose, onClose }) {
                 variant="primary"
                 size="sm"
                 onClick={() => {
-                  setConfirming(false);
-                  onChoose(p.id, true);
+                  setConfirming(null);
+                  toggle(p.id);
                 }}
               >
                 We’re all adults
@@ -133,7 +146,7 @@ export function WordLibrary({ selected, canChoose, onChoose, onClose }) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setConfirming(false)}
+                onClick={() => setConfirming(null)}
               >
                 Never mind
               </Button>
@@ -143,13 +156,25 @@ export function WordLibrary({ selected, canChoose, onChoose, onClose }) {
           <Button
             variant={chosen ? "mint" : "secondary"}
             size="sm"
-            disabled={!canChoose}
+            disabled={!canChoose || onlyOne}
             icon={chosen ? <Check size={16} /> : undefined}
-            onClick={() =>
-              p.adult && !chosen ? setConfirming(true) : onChoose(p.id, false)
-            }
+            onClick={() => {
+              if (p.id === "mixed") return onChange(["mixed"], false);
+              if (p.adult && !chosen) return setConfirming(p.id);
+              toggle(p.id);
+            }}
           >
-            {chosen ? "In use" : canChoose ? "Use this pack" : "Host picks"}
+            {!canChoose
+              ? chosen
+                ? "In use"
+                : "Host picks"
+              : chosen
+                ? p.id === "mixed" || onlyOne
+                  ? "In use"
+                  : "In the mix · remove"
+                : p.id === "mixed" || everything
+                  ? "Use this pack"
+                  : "Add to the mix"}
           </Button>
         )}
       </article>
@@ -160,7 +185,7 @@ export function WordLibrary({ selected, canChoose, onChoose, onClose }) {
       <div className="lib">
         <p className="muted">
           {data
-            ? `${data.total.toLocaleString()} words across ${data.packs.length} packs, each one or two words. Peek at a few; the rest stay a surprise.`
+            ? `${data.total.toLocaleString()} words across ${data.packs.length} packs, each one or two words. Pick one pack, or add several to mix them. The rest stay a surprise.`
             : "Opening the shelves…"}
         </p>
         {error && (

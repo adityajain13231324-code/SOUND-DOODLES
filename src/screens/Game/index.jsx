@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Avatar,
   Foley,
@@ -32,6 +32,16 @@ export function Game({ state: s, me, session, host, act, action, upload }) {
   const performer = s.performerIds?.includes(s.you),
     person = (id) => s.players.find((p) => p.id === id);
   const [foleyPlay, setFoleyPlay] = useState(0);
+  // In Classic everyone takes a turn, so a performer who skipped the mic check is asked for the mic
+  // while choosing a word, not in the middle of their performance.
+  const warmMic =
+    mode === "classic" && performer && ["choose", "prepare"].includes(phase);
+  useEffect(() => {
+    if (warmMic) mic.acquire().catch(() => {});
+  }, [warmMic, s.phaseId]);
+  useEffect(() => {
+    if (phase === "roundReveal" || phase === "results") mic.stop();
+  }, [phase]);
   useShake(phase === "results" ? s.phaseId : 0);
   const next = (
     <button className="button primary" onClick={() => act("next")}>

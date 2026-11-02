@@ -4,12 +4,19 @@ import { WordLibrary, useLibrary } from "./WordLibrary.jsx";
 import { Toggle } from "./kit.jsx";
 import { sfx } from "./sfx.js";
 
-/** Friendly name of the chosen word pack. */
+/** Friendly name of the chosen word packs: one name, two names, or the first two and a count. */
 export function usePackName(settings) {
   const { data } = useLibrary();
-  if (settings.wordPack === "mixed") return "Everything";
-  if (settings.wordPack === "sounds") return "Sound ideas";
-  return data?.packs.find((p) => p.id === settings.wordPack)?.name || "Library";
+  const picked = settings.wordPacks || ["mixed"];
+  if (picked.includes("mixed")) return "Everything";
+  const names = picked.map((id) =>
+    id === "sounds"
+      ? "Sound ideas"
+      : data?.packs.find((p) => p.id === id)?.name || "Library",
+  );
+  return names.length > 2
+    ? `${names.slice(0, 2).join(" + ")} + ${names.length - 2} more`
+    : names.join(" + ");
 }
 
 /** A small row of radio pills: one value out of a handful. */
@@ -276,10 +283,10 @@ export function RoomSettings({ settings, host, change }) {
       )}
       {library && (
         <WordLibrary
-          selected={settings.wordPack}
+          selected={settings.wordPacks || ["mixed"]}
           canChoose={host}
-          onChoose={(id, adults) => {
-            change({ wordPack: id, adultsOnly: !!adults });
+          onChange={(wordPacks, adults) => {
+            change({ wordPacks, adultsOnly: !!adults });
             sfx("pop");
           }}
           onClose={() => setLibrary(false)}
